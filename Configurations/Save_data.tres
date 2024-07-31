@@ -1,0 +1,9 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://uliu24jf5wgi"]
+
+[ext_resource type="Script" path="res://Configurations/SaveData.cs" id="1_75tjt"]
+
+[resource]
+script = ExtResource("1_75tjt")
+Stop_at = 0
+Code = "String Name = \"Kobby\"@
+String Animal = \"Dog\""

@@ -1,0 +1,79 @@
+[gd_resource type="Theme" load_steps=7 format=3 uid="uid://ddd0axy646jbb"]
+
+[ext_resource type="FontFile" uid="uid://4hr26p5bs6v5" path="res://Assets/Fonts/SpaceMono-Regular.ttf" id="1_k14qv"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lbm3a"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.196078, 0.588235, 0.196078, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.196078, 0.588235, 0.196078, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_25rsi"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.588235, 0.196078, 0.196078, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.585938, 0.195313, 0.195313, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7l50a"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.585938, 0.195313, 0.195313, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j4fx4"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.585938, 0.195313, 0.195313, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jty80"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.132813, 0.132813, 0.132813, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.132813, 0.132813, 0.132813, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[resource]
+Button/styles/hover = SubResource("StyleBoxFlat_lbm3a")
+Button/styles/normal = SubResource("StyleBoxFlat_25rsi")
+RichTextLabel/fonts/normal_font = ExtResource("1_k14qv")
+RichTextLabel/styles/focus = SubResource("StyleBoxFlat_7l50a")
+TextEdit/styles/focus = SubResource("StyleBoxFlat_j4fx4")
+TextEdit/styles/normal = SubResource("StyleBoxFlat_jty80")
