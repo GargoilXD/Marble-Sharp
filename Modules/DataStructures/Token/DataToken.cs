@@ -1,5 +1,5 @@
 public class DataToken : Token {
-    public enum DATATYPE {
+    public enum TYPE {
         NONE,
         VARIANT,
         BOOLEAN,
@@ -16,32 +16,27 @@ public class DataToken : Token {
         PARAMETER,
         INSTRUCTIONS
     }
-
-    public DATATYPE Data_type { get; private set; }
-
-    public DataToken(DATATYPE data_type = DATATYPE.NONE, TokenPosition position = null, object tokenValue = null) {
-        Data_type = data_type;
-        Token_value = tokenValue;
-        Position = position;
-        Type = TYPE.DATA;
+    public TYPE Type;
+    public object Data;
+    public DataToken(TYPE type, object data, TokenPosition position) : base(TOKEN_TYPE.DATA, position) {
+        Type = type;
+        Data = data;
     }
-
-    public static DATATYPE Convert(string dataType) {
+    public static TYPE Convert(string dataType) {
         return dataType switch {
-            "Variant" => DATATYPE.VARIANT,
-            "Boolean" => DATATYPE.BOOLEAN,
-            "Integer" => DATATYPE.INTEGER,
-            "Float" => DATATYPE.FLOAT,
-            "String" => DATATYPE.STRING,
-            "List" => DATATYPE.LIST,
-            "Dictionary" => DATATYPE.DICTIONARY,
-            "Enumeration" => DATATYPE.ENUMERATION,
-            "Object" => DATATYPE.OBJECT,
-            _ => DATATYPE.NONE
+            "Variant" => TYPE.VARIANT,
+            "Boolean" => TYPE.BOOLEAN,
+            "Integer" => TYPE.INTEGER,
+            "Float" => TYPE.FLOAT,
+            "String" => TYPE.STRING,
+            "List" => TYPE.LIST,
+            "Dictionary" => TYPE.DICTIONARY,
+            "Enumeration" => TYPE.ENUMERATION,
+            "Object" => TYPE.OBJECT,
+            _ => TYPE.NONE
         };
     }
-
     public override string ToString() {
-        return $"({Data_type}, {Token_value})";
+        return $"({Type}, {Data})";
     }
 }

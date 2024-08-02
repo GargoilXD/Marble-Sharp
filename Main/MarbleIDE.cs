@@ -1,9 +1,5 @@
 using Godot;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
-using static Godot.WebSocketPeer;
-using static MarbleIDE;
 
 public partial class MarbleIDE : Control {
     public enum DISPLAY {
@@ -11,6 +7,7 @@ public partial class MarbleIDE : Control {
         PARSER,
         INTERPRETER
     }
+    public static string EditorCode = "";
     private DISPLAY Stop_at;
     private SaveData Save_data;
     private CodeEdit Editor;
@@ -20,7 +17,7 @@ public partial class MarbleIDE : Control {
     private AcceptDialog Input_Dialog;
 
     Tokenizer Tokenizer_object = new Tokenizer();
-    //var Parser_object:Parser = Parser.new ()
+    Parser Parser_object =  new Parser();
     //var Interpreter_object:Interpreter = Interpreter.new ()
 
     public override void _Ready() {
@@ -44,7 +41,7 @@ public partial class MarbleIDE : Control {
         };
         GetNode<Button>("%Run").Pressed += delegate {
             if (Editor.Text != "") {
-                MarbleError.Code = Editor.Text;
+                EditorCode = Editor.Text;
                 Run();
             }
         };
@@ -111,8 +108,9 @@ public partial class MarbleIDE : Control {
     }
 
     public void Run() {
+        List<Token> tokens;
         try {
-            List<Token> tokens = Tokenizer_object.Tokenize(Editor.Text);
+            tokens = Tokenizer_object.Tokenize();
             string output = "";
             foreach (Token token in tokens) {
                 output += token.ToString() + ", ";
@@ -125,17 +123,33 @@ public partial class MarbleIDE : Control {
                 Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
                 return;
             }
+            
         } catch (MarbleError error) {
             Display_data(DISPLAY.TOKENIZER, error);
-            Stage_tabs.CurrentTab = (int)DISPLAY.TOKENIZER;
+            Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
             return;
-        } 
+        }
+        try {
+            List<Vertex> vertexes = Parser_object.Parse(tokens);
+            string output = "";
+            foreach (Vertex vertex in vertexes) {
+                output += vertex.ToString() + '\n';
+            }
+            Display_data(DISPLAY.PARSER, output);
+            if (Stop_at == DISPLAY.PARSER){
+                Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
+                return;
+            }
+
+        } catch (MarbleError error){
+            Display_data(DISPLAY.PARSER, error);
+            Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
+            return;
+        }
     }
 
     private void Display_data(DISPLAY display, object data) {
         Displays[(int) display].AppendText(data.ToString());
         Displays[(int) display].Newline();
     }
-
-
 }

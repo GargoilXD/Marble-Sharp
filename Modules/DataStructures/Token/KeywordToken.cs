@@ -1,6 +1,5 @@
 public class KeywordToken : Token {
-    public enum KEYWORD {
-        NONE,
+    public enum TYPE {
         MODIFIER,
         DATATYPE,
         FLOWCONTROL,
@@ -9,21 +8,13 @@ public class KeywordToken : Token {
         INSTRUCTION_SET,
         FUNCTION
     }
-
-    public KEYWORD Keyword { get; private set; }
-
-    public KeywordToken(KEYWORD keyword = KEYWORD.NONE, TokenPosition position = null, object tokenValue = null) {
+    public TYPE Type;
+    public string Keyword;
+    public KeywordToken(TYPE type, string keyword, TokenPosition position) : base(TOKEN_TYPE.KEYWORD, position) {
+        Type = type;
         Keyword = keyword;
-        Token_value = tokenValue;
-        Position = position;
-        Type = TYPE.KEYWORD;
     }
-
     public override string ToString() {
-        string keywordStr = Keyword.ToString();
-        if (Keyword == KEYWORD.DATATYPE && Token_value is DataToken.DATATYPE) {
-            return $"({keywordStr}, {Token_value})";
-        }
-        return $"({keywordStr}, {Token_value})";
+        return $"({Type}, {Keyword})";
     }
 }

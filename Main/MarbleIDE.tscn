@@ -28,6 +28,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_afwem")
 script = ExtResource("1_p08n2")
+metadata/_edit_lock_ = true
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
@@ -210,6 +211,7 @@ selection_enabled = true
 
 [node name="InputDialog" type="AcceptDialog" parent="."]
 unique_name_in_owner = true
+disable_3d = true
 title = "Input"
 initial_position = 1
 size = Vector2i(375, 120)

@@ -1,6 +1,5 @@
 public class OperatorToken : Token {
-    public enum OPERATOR {
-        NONE,
+    public enum TYPE {
         DOT,
         NOT,
         ADD,
@@ -33,16 +32,11 @@ public class OperatorToken : Token {
         RUNS,
         EXTENDS
     }
-
-    public OPERATOR Operator_type { get; private set; }
-
-    public OperatorToken(OPERATOR operatortype = OPERATOR.NONE, TokenPosition position = null) {
-        Operator_type = operatortype;
-        Position = position;
-        Type = TYPE.OPERATOR;
+    public TYPE Type;
+    public OperatorToken(TYPE type, TokenPosition position) : base(TOKEN_TYPE.OPERATOR, position) {
+        Type = type;
     }
-
     public override string ToString() {
-        return $"({Operator_type})";
+        return $"({Type})";
     }
 }

@@ -24,8 +24,6 @@ public class MarbleError : Exception {
         ASSERTION_FAILED,
         MESSAGE
     }
-
-    public static string Code { get; set; } = "";
     public TYPE Type { get; private set; }
     public string Details { get; private set; }
     public TokenPosition Position { get; private set; }
@@ -47,7 +45,7 @@ public class MarbleError : Exception {
         string line = "";
         string fullLength = "";
 
-        foreach (char character in Code + '\n') {
+        foreach (char character in MarbleIDE.EditorCode + '\n') {
             if (lineNumber < Position.StartLine)
                 start -= 1;
 

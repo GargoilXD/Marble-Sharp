@@ -3,12 +3,48 @@
   "WorkspaceRootPath": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\scripts\\tokenizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\scripts\\tokenizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\test\\quicktest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:test\\quicktest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\token\\datatoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\token\\datatoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\scripts\\parser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\scripts\\parser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\operatorvertex\\unaryoperatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\operatorvertex\\unaryoperatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\keywordvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\keywordvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\functionvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\functionvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\datavertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\datavertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\vertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\vertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\operatorvertex\\operatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\operatorvertex\\operatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\vertex\\operatorvertex\\binaryoperatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\vertex\\operatorvertex\\binaryoperatorvertex.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|c:\\users\\dell\\documents\\programming\\projects\\godot\\marble sharp\\modules\\datastructures\\token\\operatortoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\token\\operatortoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\modules\\datastructures\\marbleerror.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|solutionrelative:modules\\datastructures\\marbleerror.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E5B5AB5A-3065-4DF4-A3CB-84458D53501B}|Marble Sharp.csproj|C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\main\\marbleide.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -22,46 +58,162 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "DataToken.cs",
-              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Token\\DataToken.cs",
-              "RelativeDocumentMoniker": "Modules\\DataStructures\\Token\\DataToken.cs",
-              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Token\\DataToken.cs",
-              "RelativeToolTip": "Modules\\DataStructures\\Token\\DataToken.cs",
-              "ViewState": "AQIAAAgAAAAAAAAAAAAQwAAAAAAAAAAA",
+              "DocumentIndex": 0,
+              "Title": "QuickTest.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Test\\QuickTest.cs",
+              "RelativeDocumentMoniker": "Test\\QuickTest.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Test\\QuickTest.cs",
+              "RelativeToolTip": "Test\\QuickTest.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABEAAAAnAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-07-31T19:50:55.291Z",
+              "WhenOpened": "2024-08-01T13:48:50.86Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Tokenizer.cs",
-              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\Scripts\\Tokenizer.cs",
-              "RelativeDocumentMoniker": "Modules\\Scripts\\Tokenizer.cs",
-              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\Scripts\\Tokenizer.cs",
-              "RelativeToolTip": "Modules\\Scripts\\Tokenizer.cs",
-              "ViewState": "AQIAAJYAAAAAAAAAAAD4vwUBAAAJAAAA",
+              "DocumentIndex": 7,
+              "Title": "OperatorVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\OperatorVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\OperatorVertex\\OperatorVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\OperatorVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\OperatorVertex\\OperatorVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAqwAIAAABQAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-07-31T18:22:10.155Z",
+              "WhenOpened": "2024-08-01T12:50:52.316Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "UnaryOperatorVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\UnaryOperatorVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\OperatorVertex\\UnaryOperatorVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\UnaryOperatorVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\OperatorVertex\\UnaryOperatorVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAQAAABiAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:50:25.325Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "KeywordVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\KeywordVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\KeywordVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\KeywordVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\KeywordVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAqwAYAAAAFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:49:58.259Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Vertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\Vertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\Vertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\Vertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\Vertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAqwAIAAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:46:32.751Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DataVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\DataVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\DataVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\DataVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\DataVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAQAAAAZAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:40:15.597Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Parser.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\Scripts\\Parser.cs",
+              "RelativeDocumentMoniker": "Modules\\Scripts\\Parser.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\Scripts\\Parser.cs",
+              "RelativeToolTip": "Modules\\Scripts\\Parser.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABEAAAAGAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-31T23:47:27.437Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "FunctionVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\FunctionVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\FunctionVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\FunctionVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\FunctionVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAMAAAALAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:39:58.436Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "BinaryOperatorVertex.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\BinaryOperatorVertex.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Vertex\\OperatorVertex\\BinaryOperatorVertex.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Vertex\\OperatorVertex\\BinaryOperatorVertex.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Vertex\\OperatorVertex\\BinaryOperatorVertex.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAqwAMAAABxAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-01T12:51:01.769Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "OperatorToken.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Token\\OperatorToken.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\Token\\OperatorToken.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\Token\\OperatorToken.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\Token\\OperatorToken.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACQAAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-31T23:29:03.11Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "MarbleError.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\MarbleError.cs",
+              "RelativeDocumentMoniker": "Modules\\DataStructures\\MarbleError.cs",
+              "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Modules\\DataStructures\\MarbleError.cs",
+              "RelativeToolTip": "Modules\\DataStructures\\MarbleError.cs",
+              "ViewState": "AQIAAA0AAAAAAAAAAAAgwCsAAAARAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-31T20:44:35.736Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "MarbleIDE.cs",
               "DocumentMoniker": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Main\\MarbleIDE.cs",
               "RelativeDocumentMoniker": "Main\\MarbleIDE.cs",
               "ToolTip": "C:\\Users\\DELL\\Documents\\Programming\\Projects\\Godot\\Marble Sharp\\Main\\MarbleIDE.cs",
               "RelativeToolTip": "Main\\MarbleIDE.cs",
-              "ViewState": "AQIAAGUAAAAAAAAAAAAwwC0AAAAkAAAA",
+              "ViewState": "AQIAAEoAAAAAAAAAAAAtwIYAAAAFAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-07-31T15:55:00.913Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-07-31T15:55:00.913Z"
             }
           ]
         }
