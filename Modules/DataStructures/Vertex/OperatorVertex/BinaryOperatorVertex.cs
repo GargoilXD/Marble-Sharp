@@ -1,13 +1,13 @@
 public class BinaryOperatorVertex : OperatorVertex {
     public Vertex Left;
     public Vertex Right;
-    public BinaryOperatorVertex(Vertex left, OperatorToken operator_token, Vertex right) : base(operator_token) {
+    public BinaryOperatorVertex(Vertex left, Token operator_token, Vertex right) : base(operator_token){
         Left = left;
-        Operator = operator_token;
         Right = right;
+        Position = Left.Position + operator_token.Position + Right.Position;
     }
 
     public override string ToString() {
-        return $"({Left}, {Operator.Operator_type}, {Right})";
+        return $"({Left}, {Operator}, {Right})";
     }
 }

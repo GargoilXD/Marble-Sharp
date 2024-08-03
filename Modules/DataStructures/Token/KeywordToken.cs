@@ -5,12 +5,48 @@ public class KeywordToken : Token {
         FLOWCONTROL,
         DECISION,
         LOOP,
-        INSTRUCTION_SET,
-        FUNCTION
+        DEFINITION,
+        INBUILT_FUNCTION
     }
+    public enum KEYWORD {
+        CONST,
+        STATIC,
+        PUBLIC,
+        PRIVATE,
+        SELF,
+        VARIANT,
+        BOOLEAN,
+        INTEGER,
+        FLOAT,
+        STRING,
+        LIST,
+        DICTIONARY,
+        ENUMERATION,
+        OBJECT,
+        BREAK,
+        CONTINUE,
+        RETURN,
+        BREAKPOINT,
+        IF,
+        ELSE,
+        ELSE_IF,
+        MATCH,
+        CASE,
+        DEFAULT,
+        FOR,
+        WHILE,
+        CLASS,
+        FUNCTION,
+        STRUCTURE,
+        ASSERT,
+        PRINT,
+        RANGE,
+        RANDOM,
+        INPUT
+    };
     public TYPE Type;
-    public string Keyword;
-    public KeywordToken(TYPE type, string keyword, TokenPosition position) : base(TOKEN_TYPE.KEYWORD, position) {
+    public KEYWORD Keyword;
+    public KeywordToken(TYPE type, KEYWORD keyword, TokenPosition position) : base(position) {
         Type = type;
         Keyword = keyword;
     }

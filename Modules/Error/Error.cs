@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-public class MarbleError : Exception {
-    public enum TYPE {
-        NONE,
+public class Error : Exception {
+    /*
+    public enum TYPE_ {
         INVALID_CHARACTER,
         UNIDENTIFIED_OPERATOR,
         INCOMPLETE_STRING,
@@ -22,18 +22,16 @@ public class MarbleError : Exception {
         RETURN,
         INCOMPATIBLE_TYPES,
         ASSERTION_FAILED,
-        MESSAGE
+        MESSAGE,
+        UNCLOSED_BRACKETS,
+        UNIMPLEMENTED_TOKEN
     }
-    public TYPE Type { get; private set; }
-    public string Details { get; private set; }
-    public TokenPosition Position { get; private set; }
-
-    public MarbleError(TYPE type = TYPE.NONE, TokenPosition position = null, string message = "") : base(message) {
-        Type = type;
+    public TYPE_ Type { get; private set; }
+    */
+    private TokenPosition Position;
+    public Error(TokenPosition position, string message = "") : base(string.IsNullOrEmpty(message)? "" : $" : {message}") {
         Position = position;
-        Details = message;
     }
-
     public string DrawPosition() {
         if (Position == null)
             return "";
@@ -112,8 +110,7 @@ public class MarbleError : Exception {
         string output = string.Join("", lines);
         return output;
     }
-
     public override string ToString() {
-        return $"{Type}" + (string.IsNullOrEmpty(Details) ? "" : $" : {Details}") + "\n" + DrawPosition();
+        return $"ERROR{Message}" + "\n" + DrawPosition();
     }
 }

@@ -1,0 +1,19 @@
+public class ParserError : Error {
+    public enum TYPE {
+        UNIMPLEMENTED_TOKEN,
+        EXPECTED_OPERAND,
+        UNEXPECTED_OPERAND,
+        EXPECTED_OPERATOR,
+        UNEXPECTED_OPERATOR,
+        EXPECTED_TOKEN,
+        UNEXPECTED_TOKEN,
+        UNCLOSED_BRACKETS
+    }
+    private TYPE Type;
+    public ParserError(TYPE type, TokenPosition position, string message = "") : base(position, message) {
+        Type = type;
+    }
+    public override string ToString() {
+        return Type + Message + "\n" + DrawPosition();
+    }
+}

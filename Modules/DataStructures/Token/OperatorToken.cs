@@ -1,5 +1,5 @@
 public class OperatorToken : Token {
-    public enum TYPE {
+    public enum OPERATOR {
         DOT,
         NOT,
         ADD,
@@ -29,11 +29,10 @@ public class OperatorToken : Token {
         DIVIDE_AND_ASSIGN,
         EXPONENT_AND_ASSIGN,
         MODOLUS_AND_ASSIGN,
-        RUNS,
         EXTENDS
     }
-    public TYPE Type;
-    public OperatorToken(TYPE type, TokenPosition position) : base(TOKEN_TYPE.OPERATOR, position) {
+    public OPERATOR Type;
+    public OperatorToken(OPERATOR type, TokenPosition position) : base(position) {
         Type = type;
     }
     public override string ToString() {

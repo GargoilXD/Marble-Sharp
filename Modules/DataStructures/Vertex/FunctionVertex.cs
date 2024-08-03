@@ -3,7 +3,7 @@
 public class FunctionVertex : Vertex {
     public Vertex Identifier;
     public List<Vertex> Arguments;
-    public FunctionVertex(DataVertex identifier, List<Vertex> arguments, TokenPosition position) : base(position) {
+    public FunctionVertex(DataVertex identifier, List<Vertex> arguments, TokenPosition position) {
         Identifier = identifier;
         Arguments = arguments;
     }

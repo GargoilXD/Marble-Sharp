@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="Marble Sharp"
+config/tags=PackedStringArray("experiment")
 run/main_scene="res://Main/MarbleIDE.tscn"
 config/features=PackedStringArray("4.2", "C#", "GL Compatibility")
 config/icon="res://Assets/Icons/Marble.png"

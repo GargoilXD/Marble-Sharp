@@ -1,15 +1,16 @@
 using System.Collections.Generic;
-
 public class Tokenizer {
-    public static readonly List<string> MODIFIER_KEYWORDS = new List<string> { "Const", "Static", "Public", "Private", "Void" };
-    public static readonly List<string> DATA_KEYWORDS = new List<string> { "true", "false", "null", "self" };
-    public static readonly List<string> DATATYPE_KEYWORDS = new List<string> { "Variant", "Boolean", "Integer", "Float", "String", "List", "Dictionary", "Enumeration", "Object" };
-    public static readonly List<string> OPERATOR_KEYWORDS = new List<string> { "not", "and", "or", "in", "is", "extends" };
-    public static readonly List<string> FLOWCONTROL_KEYWORDS = new List<string> { "Break", "Continue", "Return", "Breakpoint" };
-    public static readonly List<string> DECISION_KEYWORDS = new List<string> { "if", "else", "elseif", "Match", "Case", "Default" };
-    public static readonly List<string> LOOP_KEYWORDS = new List<string> { "For", "While" };
-    public static readonly List<string> INSTRUCTION_SET_KEYWORDS = new List<string> { "Class", "Function" };
-    public static readonly List<string> FUNCTION_KEYWORDS = new List<string> { "Assert", "Print", "Range", "Random", "Input" };
+    public static readonly Dictionary<string, List<string>> KEYWORD_CLASSIFICATIONS = new Dictionary<string, List<string>> {
+        {"MODIFIER", new List<string> { "const", "static", "public", "private"}},
+        {"DATA", new List<string> { "true", "false", "null", "self" }},
+        {"DATATYPE", new List<string> { "variant", "boolean", "integer", "float", "string", "list", "dictionary", "enumeration", "object" }},
+        {"OPERATOR", new List<string> { "not", "and", "or", "in", "is", "extends" }},
+        {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
+        {"DECISION", new List<string> { "if", "else", "elseif", "match", "case", "default" }},
+        {"LOOP", new List<string> { "for", "while" }},
+        {"DEFINITION", new List<string> { "class", "function", "structure" }},
+        {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "Range", "Random", "Input" }},
+    };
     public static readonly List<char> LETTERS = new List<char> { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '_' };
     public static readonly List<char> NUMBERS = new List<char> { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
     public static readonly List<char> OPERATOR_CHARACTERS = new List<char> { '!', '+', '-', '*', '/', '^', '%', '=', '<', '>', ':', '.', '&', '|' };
@@ -25,40 +26,33 @@ public class Tokenizer {
         public int EndPoint;
         public int StartLine;
         public int EndLine;
-
         public TokenPositioner() {
             Reset();
         }
-
         public void Reset() {
             StartPoint = 0;
             EndPoint = 0;
             StartLine = 0;
             EndLine = 0;
         }
-
         public static TokenPosition DropPoint(int index, int line) {
             return new TokenPosition(index, index, line, line);
         }
-
         public void SetStart(int index, int line) {
             StartPoint = index;
             StartLine = line;
         }
-
         public TokenPosition SetEnd(int index, int line, char character) {
             EndPoint = index - 1;
             EndLine = character == '\n' ? line - 1 : line;
             return new TokenPosition(StartPoint, EndPoint, StartLine, EndLine);
         }
     }
-
     private void NextCharacter() {
         Index += 1;
         Character = Index < MarbleIDE.EditorCode.Length ? MarbleIDE.EditorCode[Index] : '\0';
         if (Character == '\n') Line += 1;
     }
-
     public List<Token> Tokenize() {
         Index = -1;
         Line = 0;
@@ -80,64 +74,53 @@ public class Tokenizer {
                 Tokens.Add(MakeNumberToken());
             }
             else if (OPERATOR_CHARACTERS.Contains(Character)) {
-                Tokens.Add(MakeOperatorToken());
+                Tokens.Add(MakeSymbolToken());
             }
             else {
                 switch (Character) {
-                    case '$':
-                        if (Tokens.Count == 0) {
-                            NextCharacter();
-                        }
-                        else {
-                            var errorToken = Tokens[^1];
-                            Tokens.RemoveAt(Tokens.Count - 1);
-                            throw new MarbleError(MarbleError.TYPE.MESSAGE, errorToken.Position, errorToken.ToString());
-                        }
-                        break;
                     case '\n':
-                        Tokens.Add(new Token(Token.TYPE.END_OF_LINE, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.END_OF_LINE, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case '#':
                         IgnoreComment();
                         break;
                     case ',':
-                        Tokens.Add(new Token(Token.TYPE.COMMA, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.COMMA, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case '{':
-                        Tokens.Add(new Token(Token.TYPE.LEFT_CURLY_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.LEFT_CURLY_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case '}':
-                        Tokens.Add(new Token(Token.TYPE.RIGHT_CURLY_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case '(':
-                        Tokens.Add(new Token(Token.TYPE.LEFT_CIRCLE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case ')':
-                        Tokens.Add(new Token(Token.TYPE.RIGHT_CIRCLE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case '[':
-                        Tokens.Add(new Token(Token.TYPE.LEFT_SQUARE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.LEFT_SQUARE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     case ']':
-                        Tokens.Add(new Token(Token.TYPE.RIGHT_SQUARE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.RIGHT_SQUARE_BRACKET, TokenPositioner.DropPoint(Index, Line)));
                         NextCharacter();
                         break;
                     default:
-                        throw new MarbleError(MarbleError.TYPE.INVALID_CHARACTER, TokenPositioner.DropPoint(Index, Line), $"'{Character.ToString()}'");
+                        throw new TokenizerError(TokenizerError.TYPE.INVALID_CHARACTER, TokenPositioner.DropPoint(Index, Line), $"'{Character}'");
                 }
             }
         }
-        Tokens.Add(new Token(Token.TYPE.END_OF_FILE, TokenPositioner.DropPoint(Index, Line)));
+        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.END, TokenPositioner.DropPoint(Index, Line)));
         return Tokens;
     }
-
     private DataToken MakeNumberToken() {
         string data = "";
         int dot = 0;
@@ -153,13 +136,12 @@ public class Tokenizer {
             NextCharacter();
         }
         if (dot == 1) {
-            return new DataToken(DataToken.DATATYPE.FLOAT, Positioner.SetEnd(Index, Line, Character), float.Parse(data));
+            return new DataToken(DataToken.TYPE.FLOAT, float.Parse(data), Positioner.SetEnd(Index, Line, Character));
         }
         else {
-            return new DataToken(DataToken.DATATYPE.INTEGER, Positioner.SetEnd(Index, Line, Character), int.Parse(data));
+            return new DataToken(DataToken.TYPE.INTEGER, int.Parse(data), Positioner.SetEnd(Index, Line, Character));
         }
     }
-
     private Token MakeLetterToken() {
         string data = "";
         Positioner.SetStart(Index, Line);
@@ -168,26 +150,25 @@ public class Tokenizer {
             NextCharacter();
         }
         return data switch {
-            "Const" => new KeywordToken(KeywordToken.KEYWORD.MODIFIER, Positioner.SetEnd(Index, Line, Character), data),
-            "Static" => new KeywordToken(KeywordToken.KEYWORD.MODIFIER, Positioner.SetEnd(Index, Line, Character), data),
-            "Public" => new KeywordToken(KeywordToken.KEYWORD.MODIFIER, Positioner.SetEnd(Index, Line, Character), data),
-            "Private" => new KeywordToken(KeywordToken.KEYWORD.MODIFIER, Positioner.SetEnd(Index, Line, Character), data),
-            "Void" => new KeywordToken(KeywordToken.KEYWORD.MODIFIER, Positioner.SetEnd(Index, Line, Character), data),
+            "const" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.CONST, Positioner.SetEnd(Index, Line, Character)),
+            "static" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.STATIC, Positioner.SetEnd(Index, Line, Character)),
+            "public" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PUBLIC, Positioner.SetEnd(Index, Line, Character)),
+            "private" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PRIVATE, Positioner.SetEnd(Index, Line, Character)),
             
-            "true" => new DataToken(DataToken.DATATYPE.BOOLEAN, Positioner.SetEnd(Index, Line, Character), true),
-            "false" => new DataToken(DataToken.DATATYPE.BOOLEAN, Positioner.SetEnd(Index, Line, Character), false),
-            "null" => new DataToken(DataToken.DATATYPE.VARIANT, Positioner.SetEnd(Index, Line, Character), null),
-            "self" => new DataToken(DataToken.DATATYPE.OBJECT, Positioner.SetEnd(Index, Line, Character), data),
+            "true" => new DataToken(DataToken.TYPE.BOOLEAN, true, Positioner.SetEnd(Index, Line, Character)),
+            "false" => new DataToken(DataToken.TYPE.BOOLEAN, false, Positioner.SetEnd(Index, Line, Character)),
+            "null" => new DataToken(DataToken.TYPE.VARIANT, null, Positioner.SetEnd(Index, Line, Character)),
+            "self" => new DataToken(DataToken.TYPE.OBJECT, KeywordToken.KEYWORD.SELF, Positioner.SetEnd(Index, Line, Character)),
             
-            "Variant" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Boolean" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Integer" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Float" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "String" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "List" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Dictionary" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Enumeration" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
-            "Object" => new KeywordToken(KeywordToken.KEYWORD.DATATYPE, Positioner.SetEnd(Index, Line, Character), data),
+            "variant" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.VARIANT, Positioner.SetEnd(Index, Line, Character)),
+            "boolean" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.BOOLEAN, Positioner.SetEnd(Index, Line, Character)),
+            "integer" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.INTEGER, Positioner.SetEnd(Index, Line, Character)),
+            "float" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.FLOAT, Positioner.SetEnd(Index, Line, Character)),
+            "string" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.STRING, Positioner.SetEnd(Index, Line, Character)),
+            "list" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.LIST, Positioner.SetEnd(Index, Line, Character)),
+            "dictionary" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.DICTIONARY, Positioner.SetEnd(Index, Line, Character)),
+            "enumeration" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.ENUMERATION, Positioner.SetEnd(Index, Line, Character)),
+            "object" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.OBJECT, Positioner.SetEnd(Index, Line, Character)),
             
             "not" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.SetEnd(Index, Line, Character)),
             "and" => new OperatorToken(OperatorToken.OPERATOR.ADD, Positioner.SetEnd(Index, Line, Character)),
@@ -196,34 +177,34 @@ public class Tokenizer {
             "is" => new OperatorToken(OperatorToken.OPERATOR.IS, Positioner.SetEnd(Index, Line, Character)),
             "extends" => new OperatorToken(OperatorToken.OPERATOR.EXTENDS, Positioner.SetEnd(Index, Line, Character)),
             
-            "Break" => new KeywordToken(KeywordToken.KEYWORD.FLOWCONTROL, Positioner.SetEnd(Index, Line, Character), data),
-            "Continue" => new KeywordToken(KeywordToken.KEYWORD.FLOWCONTROL, Positioner.SetEnd(Index, Line, Character), data),
-            "Return" => new KeywordToken(KeywordToken.KEYWORD.FLOWCONTROL, Positioner.SetEnd(Index, Line, Character), data),
-            "Breakpoint" => new KeywordToken(KeywordToken.KEYWORD.FLOWCONTROL, Positioner.SetEnd(Index, Line, Character), data),
+            "break" => new KeywordToken(KeywordToken.TYPE.FLOWCONTROL, KeywordToken.KEYWORD.BREAK, Positioner.SetEnd(Index, Line, Character)),
+            "continue" => new KeywordToken(KeywordToken.TYPE.FLOWCONTROL, KeywordToken.KEYWORD.CONTINUE, Positioner.SetEnd(Index, Line, Character)),
+            "return" => new KeywordToken(KeywordToken.TYPE.FLOWCONTROL, KeywordToken.KEYWORD.RETURN, Positioner.SetEnd(Index, Line, Character)),
+            "breakpoint" => new KeywordToken(KeywordToken.TYPE.FLOWCONTROL, KeywordToken.KEYWORD.BREAKPOINT, Positioner.SetEnd(Index, Line, Character)),
             
-            "if" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
-            "else" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
-            "elseif" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
-            "Match" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
-            "Case" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
-            "Default" => new KeywordToken(KeywordToken.KEYWORD.DECISION, Positioner.SetEnd(Index, Line, Character), data),
+            "if" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.IF, Positioner.SetEnd(Index, Line, Character)),
+            "else" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.ELSE, Positioner.SetEnd(Index, Line, Character)),
+            "elseif" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.ELSE_IF, Positioner.SetEnd(Index, Line, Character)),
+            "match" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.MATCH, Positioner.SetEnd(Index, Line, Character)),
+            "case" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.CASE, Positioner.SetEnd(Index, Line, Character)),
+            "default" => new KeywordToken(KeywordToken.TYPE.DECISION, KeywordToken.KEYWORD.DEFAULT, Positioner.SetEnd(Index, Line, Character)),
             
-            "For" => new KeywordToken(KeywordToken.KEYWORD.LOOP, Positioner.SetEnd(Index, Line, Character), data),
-            "While" => new KeywordToken(KeywordToken.KEYWORD.LOOP, Positioner.SetEnd(Index, Line, Character), data),
+            "for" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.FOR, Positioner.SetEnd(Index, Line, Character)),
+            "while" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.WHILE, Positioner.SetEnd(Index, Line, Character)),
             
-            "Class" => new KeywordToken(KeywordToken.KEYWORD.INSTRUCTION_SET, Positioner.SetEnd(Index, Line, Character), data),
-            "Function" => new KeywordToken(KeywordToken.KEYWORD.INSTRUCTION_SET, Positioner.SetEnd(Index, Line, Character), data),
+            "class" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CLASS, Positioner.SetEnd(Index, Line, Character)),
+            "function" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character)),
+            "structure" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.STRUCTURE, Positioner.SetEnd(Index, Line, Character)),
             
-            "Assert" => new KeywordToken(KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character), data),
-            "Print" => new KeywordToken(KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character), data),
-            "Range" => new KeywordToken(KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character), data),
-            "Random" => new KeywordToken(KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character), data),
-            "Input" => new KeywordToken(KeywordToken.KEYWORD.FUNCTION, Positioner.SetEnd(Index, Line, Character), data),
+            "Assert" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.ASSERT, Positioner.SetEnd(Index, Line, Character)),
+            "Print" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.PRINT, Positioner.SetEnd(Index, Line, Character)),
+            "Range" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.RANGE, Positioner.SetEnd(Index, Line, Character)),
+            "Random" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.RANDOM, Positioner.SetEnd(Index, Line, Character)),
+            "Input" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.INPUT, Positioner.SetEnd(Index, Line, Character)),
             
-            _ => new DataToken(DataToken.DATATYPE.IDENTIFIER, Positioner.SetEnd(Index, Line, Character), data)
-            };
+            _ => new DataToken(DataToken.TYPE.IDENTIFIER, data, Positioner.SetEnd(Index, Line, Character))
+        };
     }
-
     private DataToken MakeStringToken() {
         char start = Character;
         string data = "";
@@ -231,16 +212,15 @@ public class Tokenizer {
         NextCharacter();
         while (Character != start) {
             if (Character == '\n' || Character == '\0') {
-                throw new MarbleError(MarbleError.TYPE.INCOMPLETE_STRING, Positioner.SetEnd(Index, Line, Character));
+                throw new TokenizerError(TokenizerError.TYPE.INCOMPLETE_STRING, Positioner.SetEnd(Index, Line, Character));
             }
             data += Character;
             NextCharacter();
         }
         NextCharacter();
-        return new DataToken(DataToken.DATATYPE.STRING, Positioner.SetEnd(Index, Line, Character), data);
+        return new DataToken(DataToken.TYPE.STRING, data, Positioner.SetEnd(Index, Line, Character));
     }
-
-    private Token MakeOperatorToken() {
+    private Token MakeSymbolToken() {
         string data = "";
         Positioner.SetStart(Index, Line);
         while (OPERATOR_CHARACTERS.Contains(Character)) {
@@ -249,33 +229,44 @@ public class Tokenizer {
         }
         return data switch {
             "." => new OperatorToken(OperatorToken.OPERATOR.DOT, Positioner.SetEnd(Index, Line, Character)),
-            "!" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.SetEnd(Index, Line, Character)),
             "+" => new OperatorToken(OperatorToken.OPERATOR.ADD, Positioner.SetEnd(Index, Line, Character)),
             "-" => new OperatorToken(OperatorToken.OPERATOR.SUBTRACT, Positioner.SetEnd(Index, Line, Character)),
             "*" => new OperatorToken(OperatorToken.OPERATOR.MULTIPLY, Positioner.SetEnd(Index, Line, Character)),
             "/" => new OperatorToken(OperatorToken.OPERATOR.DIVIDE, Positioner.SetEnd(Index, Line, Character)),
             "^" => new OperatorToken(OperatorToken.OPERATOR.EXPONENT, Positioner.SetEnd(Index, Line, Character)),
             "%" => new OperatorToken(OperatorToken.OPERATOR.MODOLUS, Positioner.SetEnd(Index, Line, Character)),
+            
             "=" => new OperatorToken(OperatorToken.OPERATOR.ASSIGN, Positioner.SetEnd(Index, Line, Character)),
+            ":" => new OperatorToken(OperatorToken.OPERATOR.COLON, Positioner.SetEnd(Index, Line, Character)),
+
+            "!" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.SetEnd(Index, Line, Character)),
+            "|" => new OperatorToken(OperatorToken.OPERATOR.BITWISE_OR, Positioner.SetEnd(Index, Line, Character)),
+            "&" => new OperatorToken(OperatorToken.OPERATOR.BITWISE_AND, Positioner.SetEnd(Index, Line, Character)),
             "<" => new OperatorToken(OperatorToken.OPERATOR.LESSER_THAN, Positioner.SetEnd(Index, Line, Character)),
             ">" => new OperatorToken(OperatorToken.OPERATOR.GREATER_THAN, Positioner.SetEnd(Index, Line, Character)),
-            ":" => new OperatorToken(OperatorToken.OPERATOR.COLON, Positioner.SetEnd(Index, Line, Character)),
-            "&" => new OperatorToken(OperatorToken.OPERATOR.BITWISE_AND, Positioner.SetEnd(Index, Line, Character)),
-            "|" => new OperatorToken(OperatorToken.OPERATOR.BITWISE_OR, Positioner.SetEnd(Index, Line, Character)),
+
+            "//" => new OperatorToken(OperatorToken.OPERATOR.INTEGER_DIVIDE, Positioner.SetEnd(Index, Line, Character)),
+
+            "||" => new OperatorToken(OperatorToken.OPERATOR.OR, Positioner.SetEnd(Index, Line, Character)),
+            "&&" => new OperatorToken(OperatorToken.OPERATOR.AND, Positioner.SetEnd(Index, Line, Character)),
+            
+            "==" => new OperatorToken(OperatorToken.OPERATOR.EQUALS, Positioner.SetEnd(Index, Line, Character)),
             "!=" => new OperatorToken(OperatorToken.OPERATOR.NOT_EQUALS, Positioner.SetEnd(Index, Line, Character)),
+            "<=" => new OperatorToken(OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS, Positioner.SetEnd(Index, Line, Character)),
+            ">=" => new OperatorToken(OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS, Positioner.SetEnd(Index, Line, Character)),
+
             "+=" => new OperatorToken(OperatorToken.OPERATOR.ADD_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
             "-=" => new OperatorToken(OperatorToken.OPERATOR.SUBTRACT_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
             "*=" => new OperatorToken(OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
             "/=" => new OperatorToken(OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
             "^=" => new OperatorToken(OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
             "%=" => new OperatorToken(OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN, Positioner.SetEnd(Index, Line, Character)),
-            "==" => new OperatorToken(OperatorToken.OPERATOR.EQUALS, Positioner.SetEnd(Index, Line, Character)),
-            "<=" => new OperatorToken(OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS, Positioner.SetEnd(Index, Line, Character)),
-            ">=" => new OperatorToken(OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS, Positioner.SetEnd(Index, Line, Character)),
-            _ => throw new MarbleError(MarbleError.TYPE.UNIDENTIFIED_OPERATOR, Positioner.SetEnd(Index, Line, Character), data)
+            
+            "<<" => new SymbolToken(SymbolToken.SYMBOL.LEFT_TUPLE_BRACKET, Positioner.SetEnd(Index, Line, Character)),
+            ">>" => new SymbolToken(SymbolToken.SYMBOL.RIGHT_TUPLE_BRACKET, Positioner.SetEnd(Index, Line, Character)),
+            _ => throw new TokenizerError(TokenizerError.TYPE.UNIDENTIFIED_OPERATOR, Positioner.SetEnd(Index, Line, Character), $"'{data}'")
         };
     }
-
     private void IgnoreComment() {
         NextCharacter();
         while (Character != '\n' && Character != '\0') {

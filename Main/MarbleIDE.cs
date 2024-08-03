@@ -58,32 +58,31 @@ public partial class MarbleIDE : Control {
         Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
         Highlighter.FunctionColor = Color.FromString("CORNFLOWER_BLUE", Color.Color8(0, 0, 0));
         Highlighter.MemberVariableColor = Color.FromString("LIGHT_BLUE", Color.Color8(0, 0, 0));
-
-        foreach (string keyword in Tokenizer.MODIFIER_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["MODIFIER"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CRIMSON", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.DATA_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DATA"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("INDIAN_RED", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.DATATYPE_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DATATYPE"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("FIREBRICK", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.OPERATOR_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["OPERATOR"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("FIREBRICK", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.FLOWCONTROL_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["FLOW_CONTROL"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.DECISION_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DECISION"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("YELLOW", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.LOOP_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["LOOP"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.INSTRUCTION_SET_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DEFINITION"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CADET_BLUE", Color.Color8(0, 0, 0));
         }
-        foreach (string keyword in Tokenizer.FUNCTION_KEYWORDS) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["INBUILT_FUNCTION"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("SEA_GREEN", Color.Color8(0, 0, 0));
         }
         Highlighter.AddColorRegion("\"", "\"", Color.FromString("GREEN_YELLOW", Color.Color8(0, 0, 0)));
@@ -95,8 +94,8 @@ public partial class MarbleIDE : Control {
         if (@event.IsActionPressed("Save")) {
             Save_data.Code = Editor.Text;
             Save_data.Stop_at = Stop_at;
-            Error State = ResourceSaver.Save(Save_data, "res://Configurations/Save_data.tres");
-            if (State == Error.Ok) {
+            Godot.Error State = ResourceSaver.Save(Save_data, "res://Configurations/Save_data.tres");
+            if (State == Godot.Error.Ok) {
                 Displays[(int) Stop_at].AppendText("Save Successful");
                 Displays[(int) Stop_at].Newline();
             }
@@ -114,8 +113,12 @@ public partial class MarbleIDE : Control {
             string output = "";
             foreach (Token token in tokens) {
                 output += token.ToString() + ", ";
-                if (token.Type == Token.TYPE.END_OF_LINE) {
-                    output += '\n';
+                switch (token) {
+                    case SymbolToken symbol_token:
+                        if (symbol_token.Symbol == SymbolToken.SYMBOL.END_OF_LINE){
+                            output += '\n';
+                        }
+                        break;
                 }
             }
             Display_data(DISPLAY.TOKENIZER, output);
@@ -124,7 +127,7 @@ public partial class MarbleIDE : Control {
                 return;
             }
             
-        } catch (MarbleError error) {
+        } catch (Error error) {
             Display_data(DISPLAY.TOKENIZER, error);
             Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
             return;
@@ -141,7 +144,7 @@ public partial class MarbleIDE : Control {
                 return;
             }
 
-        } catch (MarbleError error){
+        } catch (Error error){
             Display_data(DISPLAY.PARSER, error);
             Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
             return;
