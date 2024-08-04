@@ -6,11 +6,6 @@
 script = ExtResource("1_75tjt")
 Stop_at = 1
 Code = "integer A = 0
-if (X == 0) {
-	Print(\"Hi\")
-} elseif (X == 1) {
-	Print(\"Hmmm\")
-} else {
-	Print(\"Bye\")
-}
-"
+A.B.C
+A[B][C]
+A{}"

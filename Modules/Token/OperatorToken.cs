@@ -30,7 +30,8 @@ public class OperatorToken : Token {
         EXPONENT_AND_ASSIGN,
         MODOLUS_AND_ASSIGN,
         EXTENDS,
-        RUNS
+        RUNS,
+        ACCESSOR
     }
     public OPERATOR Type {private set; get;}
     public OperatorToken(OPERATOR type, TokenPosition position) : base(position) {

@@ -29,7 +29,7 @@ public class DataNode : Node {
             case TYPE.DICTIONARY:
                 return $"({Type}, {string.Join(", ", Data as Dictionary<Node, Node>)})";
             case TYPE.STRING:
-            return $"({Type}, {Data.ToString().ReplaceLineEndings("; ")})";
+            return $"({Type}, '{Data.ToString().ReplaceLineEndings("; ")}')";
             default:
                 return $"({Type}, {Data})";
         }
