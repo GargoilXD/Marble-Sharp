@@ -7,13 +7,14 @@ public class ParserError : Error {
         UNEXPECTED_OPERATOR,
         EXPECTED_TOKEN,
         UNEXPECTED_TOKEN,
-        UNCLOSED_BRACKETS
+        UNCLOSED_BRACKETS,
+        EMPTHY_ENUMERATION
     }
-    private TYPE Type;
+    public TYPE Type {private set; get; }
     public ParserError(TYPE type, TokenPosition position, string message = "") : base(position, message) {
         Type = type;
     }
     public override string ToString() {
-        return Type + Message + "\n" + DrawPosition();
+        return Type + Message + IndicateErrorLine();
     }
 }

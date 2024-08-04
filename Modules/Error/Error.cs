@@ -2,115 +2,52 @@ using System;
 using System.Collections.Generic;
 
 public class Error : Exception {
-    /*
-    public enum TYPE_ {
-        INVALID_CHARACTER,
-        UNIDENTIFIED_OPERATOR,
-        INCOMPLETE_STRING,
-        EXPECTED_OPERAND,
-        UNEXPECTED_OPERAND,
-        EXPECTED_TOKEN,
-        UNDEFINED_IDENTIFIER,
-        DATATYPE_MISMATCH,
-        ALREADY_DEFINED_IDENTIFIER,
-        DIVISION_BY_ZERO,
-        UNEXPECTED_TOKEN,
-        EXPECTED_IDENTIFIER,
-        UNINITIALIZED_IDENTIFIER,
-        BREAK,
-        CONTINUE,
-        RETURN,
-        INCOMPATIBLE_TYPES,
-        ASSERTION_FAILED,
-        MESSAGE,
-        UNCLOSED_BRACKETS,
-        UNIMPLEMENTED_TOKEN
-    }
-    public TYPE_ Type { get; private set; }
-    */
     private TokenPosition Position;
     public Error(TokenPosition position, string message = "") : base(string.IsNullOrEmpty(message)? "" : $" : {message}") {
         Position = position;
     }
-    public string DrawPosition() {
-        if (Position == null)
-            return "";
-
-        int start = Position.StartPoint;
-        int end = Position.EndPoint - Position.StartPoint;
-        int lineNumber = 0;
-        var lines = new List<string>();
-        string line = "";
-        string fullLength = "";
-
-        foreach (char character in MarbleIDE.EditorCode + '\n') {
-            if (lineNumber < Position.StartLine)
-                start -= 1;
-
-            if (lineNumber >= Position.StartLine && lineNumber <= Position.EndLine) {
-                fullLength += character;
-                line += character;
-                if (character == '\n') {
-                    lines.Add(line);
-                    line = "";
+    public string IndicateErrorLine() {
+        string[] code = MarbleIDE.EditorCode.Split('\n');
+        List<string> output = new List<string>();
+        int line_start_index = 0;
+        for (int line = 0; line != Position.StartLine; line ++) line_start_index += code[line].Length + 1;
+        for (int line_number = Position.StartLine; line_number <= Position.EndLine; line_number ++){
+            string line = code[line_number] + ' ';
+            string indications = "";
+            int start = Position.StartPoint - line_start_index;
+            int end = Position.EndPoint - line_start_index;
+            for (int x = 0; x < line.Length; x ++) {
+                if (x < start) {
+                    switch (line[x]) {
+                        case '\t':
+                            indications += "    ";
+                            break;
+                        default:
+                            indications += ' ';
+                            break;
+                    }
+                }
+                else if (x >= start && x <= end) {
+                    switch (line[x]) {
+                        case '\t':
+                            indications += "^^^^";
+                            break;
+                        default:
+                            indications += '^';
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else if (lineNumber > Position.EndLine) {
-                break;
-            }
-
-            if (character == '\n')
-                lineNumber += 1;
+            line_start_index += line.Length;
+            output.Add(line);
+            output.Add(indications);
         }
-
-        end += start;
-        int index = 0;
-        int lineIndex = 0;
-        int lineSize = lines[lineIndex].Length;
-
-        while (index <= Position.EndPoint && lineIndex < lines.Count) {
-            if (index > end)
-                break;
-
-            if (index == lineSize) {
-                lineIndex += 1;
-                lineSize += lines[lineIndex].Length;
-            }
-
-            if (index < start) {
-                switch (fullLength[index]) {
-                    case '\t':
-                        lines[lineIndex] += "    ";
-                        break;
-                    case '\n':
-                        lines[lineIndex] += "\n";
-                        break;
-                    default:
-                        lines[lineIndex] += " ";
-                        break;
-                }
-            }
-            else if (index >= start && index <= end) {
-                switch (fullLength[index]) {
-                    case '\n':
-                        lines[lineIndex] += "^\n";
-                        break;
-                    case '\t':
-                        lines[lineIndex] += "^^^^";
-                        break;
-                    default:
-                        lines[lineIndex] += "^";
-                        break;
-                }
-            }
-
-            index += 1;
-        }
-
-        string output = string.Join("", lines);
-        return output;
+       return '\n' + string.Join("\n", output);
     }
     public override string ToString() {
-        return $"ERROR{Message}" + "\n" + DrawPosition();
+        return $"ERROR{Message}{IndicateErrorLine()}";
     }
 }

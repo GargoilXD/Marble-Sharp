@@ -4,11 +4,11 @@ public class TokenizerError : Error {
         UNIDENTIFIED_OPERATOR,
         INCOMPLETE_STRING
     }
-    private TYPE Type;
+    public TYPE Type {private set; get; }
     public TokenizerError(TYPE type, TokenPosition position, string message = "") : base(position, message) {
         Type = type;
     }
     public override string ToString() {
-        return Type + Message + "\n" + DrawPosition();
+        return Type + Message + "\n" + IndicateErrorLine();
     }
 }

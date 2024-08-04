@@ -7,7 +7,7 @@ public partial class MarbleIDE : Control {
         PARSER,
         INTERPRETER
     }
-    public static string EditorCode = "";
+    public static string EditorCode {private set; get;} = "";
     private DISPLAY Stop_at;
     private SaveData Save_data;
     private CodeEdit Editor;
@@ -50,7 +50,6 @@ public partial class MarbleIDE : Control {
                 display.Clear();
             }
         };
-
 
         //Interpreter_object.PopUp_input = accept_dialog;
         CodeHighlighter Highlighter = new CodeHighlighter();
@@ -107,52 +106,46 @@ public partial class MarbleIDE : Control {
     }
 
     public void Run() {
-        List<Token> tokens;
+        Displays[0].Clear();
+        Displays[1].Clear();
         try {
-            tokens = Tokenizer_object.Tokenize();
-            string output = "";
-            foreach (Token token in tokens) {
-                output += token.ToString() + ", ";
-                switch (token) {
-                    case SymbolToken symbol_token:
-                        if (symbol_token.Symbol == SymbolToken.SYMBOL.END_OF_LINE){
-                            output += '\n';
-                        }
-                        break;
-                }
-            }
-            Display_data(DISPLAY.TOKENIZER, output);
+            List<Token> tokens = Tokenizer_object.Tokenize();
+            Display_data(DISPLAY.TOKENIZER, string.Join(", ", tokens).Replace("(END_OF_LINE), ", "\n"));
             if (Stop_at == DISPLAY.TOKENIZER){
                 Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
                 return;
             }
-            
-        } catch (Error error) {
-            Display_data(DISPLAY.TOKENIZER, error);
-            Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
-            return;
-        }
-        try {
-            List<Vertex> vertexes = Parser_object.Parse(tokens);
-            string output = "";
-            foreach (Vertex vertex in vertexes) {
-                output += vertex.ToString() + '\n';
-            }
-            Display_data(DISPLAY.PARSER, output);
+            List<Node> nodes = Parser_object.Parse(tokens);
+            Display_data(DISPLAY.PARSER, string.Join("\n", nodes));
             if (Stop_at == DISPLAY.PARSER){
                 Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
                 return;
             }
-
-        } catch (Error error){
-            Display_data(DISPLAY.PARSER, error);
-            Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
-            return;
+        } catch (Error error) {
+            switch (error) {
+                case TokenizerError:
+                    Display_data(DISPLAY.TOKENIZER, error);
+                    Stage_tabs.CurrentTab = (int) DISPLAY.TOKENIZER;
+                    return;
+                case ParserError:
+                    Display_data(DISPLAY.PARSER, error);
+                    Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
+                    return;
+                case InterpreterError:
+                    break;  
+                default:
+                    Display_data((DISPLAY) Stage_tabs.CurrentTab, error);
+                    break;
+            }
         }
     }
 
     private void Display_data(DISPLAY display, object data) {
         Displays[(int) display].AppendText(data.ToString());
         Displays[(int) display].Newline();
+    }
+
+    private void Clear_display() {
+        
     }
 }

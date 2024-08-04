@@ -8,13 +8,13 @@ public class DataToken : Token {
         VARIANT,
         IDENTIFIER
     }
-    public TYPE Type;
-    public object Data;
+    public TYPE Type {private set; get;}
+    public object Data {private set; get;}
     public DataToken(TYPE type, object data, TokenPosition position) : base(position) {
         Type = type;
         Data = data;
     }
     public override string ToString() {
-        return $"({Type}, {Data})";
+        return $"({Type}, {Data.ToString().ReplaceLineEndings("; ")})";
     }
 }

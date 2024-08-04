@@ -44,8 +44,8 @@ public class KeywordToken : Token {
         RANDOM,
         INPUT
     };
-    public TYPE Type;
-    public KEYWORD Keyword;
+    public TYPE Type {private set; get;}
+    public KEYWORD Keyword {private set; get;}
     public KeywordToken(TYPE type, KEYWORD keyword, TokenPosition position) : base(position) {
         Type = type;
         Keyword = keyword;

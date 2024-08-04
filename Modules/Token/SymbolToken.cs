@@ -12,7 +12,7 @@ public class SymbolToken : Token {
         END_OF_LINE,
         END
     }
-    public SYMBOL Symbol;
+    public SYMBOL Symbol {private set; get;}
     public SymbolToken(SYMBOL symbol, TokenPosition position) : base(position) {
         Symbol = symbol;
     }

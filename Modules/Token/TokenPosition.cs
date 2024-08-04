@@ -3,11 +3,17 @@ public class TokenPosition {
     public int EndPoint { get; private set; }
     public int StartLine { get; private set; }
     public int EndLine { get; private set; }
-    public TokenPosition(int startPoint = 0, int endPoint = 0, int startLine = 0, int endLine = 0) {
-        StartPoint = startPoint;
-        EndPoint = endPoint;
-        StartLine = startLine;
-        EndLine = endLine;
+    public TokenPosition(int start_point = 0, int end_point = 0, int start_line = 0, int end_line = 0) {
+        StartPoint = start_point;
+        EndPoint = end_point;
+        StartLine = start_line;
+        EndLine = end_line;
+    }
+    public TokenPosition(int index, int line) {
+        StartPoint = index;
+        EndPoint = index;
+        StartLine = line;
+        EndLine = line;
     }
     public TokenPosition Duplicate() {
         return new TokenPosition(StartPoint, EndPoint, StartLine, EndLine);
