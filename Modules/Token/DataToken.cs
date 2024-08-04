@@ -15,6 +15,8 @@ public class DataToken : Token {
         Data = data;
     }
     public override string ToString() {
+        if (Type == TYPE.STRING) return $"({Type}, '{Data}')";
+        if (Type == TYPE.VARIANT) return $"({Type}, 'null')";
         return $"({Type}, {Data.ToString().ReplaceLineEndings("; ")})";
     }
 }

@@ -5,7 +5,4 @@
 [resource]
 script = ExtResource("1_75tjt")
 Stop_at = 1
-Code = "integer A = 0
-A.B.C
-A[B][C]
-A{}"
+Code = ""

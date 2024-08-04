@@ -27,11 +27,11 @@ public class DataNode : Node {
             case TYPE.LIST:
                 return $"({Type}, {string.Join(", ", Data as List<Node>)})";
             case TYPE.DICTIONARY:
-                return $"({Type}, {string.Join(", ", Data as Dictionary<Node, Node>)})";
+                return $"({Type}, {string.Join(", ", Data as Dictionary<Token, Node>)})";
             case TYPE.STRING:
             return $"({Type}, '{Data.ToString().ReplaceLineEndings("; ")}')";
             default:
-                return $"({Type}, {Data})";
+                return $"({Type}, {(Data == null? "null" : Data)})";
         }
     }
 }
