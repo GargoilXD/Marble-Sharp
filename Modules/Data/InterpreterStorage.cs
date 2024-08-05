@@ -3,20 +3,24 @@ public class InterpreterStorage {
 	private InterpreterStorage Parent;
 	private Dictionary<string, MarbleData> Variables;
 	private Dictionary<string, object> Functions;
+    public bool CanGetUninitializedVariable;
 	public InterpreterStorage() {
         Variables = new Dictionary<string, MarbleData>();
         Functions = new Dictionary<string, object>();
         Parent = null;
+        CanGetUninitializedVariable = false;
     }
 	public InterpreterStorage(Dictionary<string, MarbleData> variables, Dictionary<string, object> functions) {
         Variables = variables;
         Functions = functions;
         Parent = null;
+        CanGetUninitializedVariable = false;
     }
 	public InterpreterStorage(InterpreterStorage parent) {
         Parent = parent;
         Variables = new Dictionary<string, MarbleData>();
         Functions = new Dictionary<string, object>();
+        CanGetUninitializedVariable = false;
     }
 	public InterpreterStorage CreateChild() {
 		return new InterpreterStorage(this);
@@ -60,7 +64,7 @@ public class InterpreterStorage {
 				return Parent.GetVariable(name);
             }
         }
-        throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, null);
+        throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER);
     }
     public override string ToString(){
         return $"Variables:\n{string.Join("\n", Variables)}";

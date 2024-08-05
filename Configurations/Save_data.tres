@@ -4,5 +4,12 @@
 
 [resource]
 script = ExtResource("1_75tjt")
-Stop_at = 1
-Code = ""
+Stop_at = 2
+Code = "boolean B = true
+integer I = 2
+float F = 0.5
+string Name = \"Kobby\"
+Print(B)
+Print(I)
+Print(F)
+Print(Name)"

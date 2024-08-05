@@ -14,13 +14,14 @@ public partial class MarbleIDE : Control {
     private TabContainer Stage_tabs;
     private OptionButton Stage_option_button;
     private RichTextLabel[] Displays;
-    private AcceptDialog Input_Dialog;
+    private InputGetter Input_dialog;
 
     Tokenizer Tokenizer_object = new Tokenizer();
     Parser Parser_object = new Parser();
     Interpreter Interpreter_object = new Interpreter();
 
     public override void _Ready() {
+        base._Ready();
         Save_data = (SaveData) ResourceLoader.Load("res://Configurations/Save_data.tres");
         Editor = (CodeEdit) GetNode("%Editor");
         Stage_tabs = (TabContainer) GetNode("%StageTabs");
@@ -30,7 +31,8 @@ public partial class MarbleIDE : Control {
             (RichTextLabel) GetNode("%ParserOutput"),
             (RichTextLabel) GetNode("%InterpreterOutput")
         };
-        Input_Dialog = (AcceptDialog) GetNode("%InputDialog");
+        Input_dialog = (InputGetter) GetNode("%InputDialog");
+        Interpreter.Input_dialog = Input_dialog;
         Editor.Text = Save_data.Code;
         Stop_at = Save_data.Stop_at;
         Stage_tabs.CurrentTab = (int) Stop_at;
@@ -51,7 +53,6 @@ public partial class MarbleIDE : Control {
             }
         };
 
-        Interpreter.InputGetter = (AcceptDialog) GetNode("%InputGetter");
         CodeHighlighter Highlighter = new CodeHighlighter();
         Highlighter.NumberColor = Color.FromString("LIGHT_GREEN", Color.Color8(0,0,0));
         Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
@@ -105,7 +106,7 @@ public partial class MarbleIDE : Control {
         }
     }
 
-    public void Run() {
+    public async void Run() {
         Displays[0].Clear();
         Displays[1].Clear();
         try {
@@ -121,8 +122,9 @@ public partial class MarbleIDE : Control {
                 Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
                 return;
             }
-            Interpreter_object.Interprete(nodes, new InterpreterStorage());
+            await Interpreter_object.Interprete(nodes, new InterpreterStorage());
             Display_data(DISPLAY.INTERPRETER, Interpreter_object.Output);
+            Interpreter_object.Output = "";
             if (Stop_at == DISPLAY.INTERPRETER){
                 Stage_tabs.CurrentTab = (int) DISPLAY.INTERPRETER;
                 return;
@@ -138,7 +140,9 @@ public partial class MarbleIDE : Control {
                     Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
                     return;
                 case InterpreterError:
-                    break;  
+                    Display_data(DISPLAY.INTERPRETER, error);
+                    Stage_tabs.CurrentTab = (int) DISPLAY.INTERPRETER;
+                    return;
                 default:
                     Display_data((DISPLAY) Stage_tabs.CurrentTab, error);
                     break;

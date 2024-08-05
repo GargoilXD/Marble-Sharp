@@ -4,20 +4,9 @@
 [ext_resource type="Script" path="res://Main/MarbleIDE.cs" id="1_p08n2"]
 [ext_resource type="Texture2D" uid="uid://bq248u8aanbkl" path="res://Assets/Icons/Marble.png" id="2_aw7jb"]
 [ext_resource type="FontFile" uid="uid://gpmmiy8jepwy" path="res://Assets/Fonts/MonoC/CascadiaMono.ttf" id="3_e5qdf"]
+[ext_resource type="Script" path="res://Main/InputGetter.cs" id="5_km2fl"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rqcje"]
-
-[sub_resource type="GDScript" id="GDScript_ynclo"]
-script/source = "extends AcceptDialog
-@onready var line_edit: LineEdit = $MarginContainer/VBoxContainer/LineEdit
-
-func _ready() -> void:
-	register_text_enter($MarginContainer/VBoxContainer/LineEdit)
-
-func _on_visibility_changed() -> void:
-	if visible:
-		line_edit.grab_focus()
-"
 
 [node name="MarbleIDE" type="Control"]
 layout_mode = 3
@@ -216,7 +205,7 @@ title = "Input"
 initial_position = 1
 size = Vector2i(375, 120)
 dialog_text = "Enter Input"
-script = SubResource("GDScript_ynclo")
+script = ExtResource("5_km2fl")
 
 [node name="MarginContainer" type="MarginContainer" parent="InputDialog"]
 offset_left = 8.0
@@ -232,7 +221,6 @@ theme_override_constants/margin_bottom = 5
 layout_mode = 2
 alignment = 2
 
-[node name="LineEdit" type="LineEdit" parent="InputDialog/MarginContainer/VBoxContainer"]
+[node name="InputBox" type="LineEdit" parent="InputDialog/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
-
-[connection signal="visibility_changed" from="InputDialog" to="InputDialog" method="_on_visibility_changed"]

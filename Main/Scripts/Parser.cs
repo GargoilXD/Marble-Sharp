@@ -127,6 +127,14 @@ public class Parser {
                     default:
                         throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, CurrentToken.Position);
                 }
+            case KeywordToken keyword_token:
+                switch (keyword_token.Keyword) {
+                    case KeywordToken.KEYWORD.PRINT: case KeywordToken.KEYWORD.RANGE: case KeywordToken.KEYWORD.ASSERT: case KeywordToken.KEYWORD.RANDOM: case KeywordToken.KEYWORD.INPUT:
+                        next_token();
+                        return new FunctionNode(keyword_token, get_bracket_nodes(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_expression), keyword_token.Position + PreviousToken.Position);
+                    default:
+                        throw new ParserError(ParserError.TYPE.EXPECTED_OPERAND, CurrentToken.Position);
+                }
             default:
                 throw new ParserError(ParserError.TYPE.EXPECTED_OPERAND, CurrentToken.Position);
         }
@@ -164,11 +172,8 @@ public class Parser {
                                 break;
                         }
                         return KeywordNode.FromToken(keyword_token);
-
                     case KeywordToken.KEYWORD.PRINT: case KeywordToken.KEYWORD.RANGE: case KeywordToken.KEYWORD.ASSERT: case KeywordToken.KEYWORD.RANDOM: case KeywordToken.KEYWORD.INPUT:
-                        next_token();
-                        return new FunctionNode(keyword_token, get_bracket_nodes(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_expression), keyword_token.Position + PreviousToken.Position);
-
+                        return get_operand_node();
                     default:
                         throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                 }
@@ -344,11 +349,11 @@ public class Parser {
                             }
                             break;
                         case KeywordToken.TYPE.INBUILT_FUNCTION:
-                        switch (keyword_token.Keyword) {
-                            case KeywordToken.KEYWORD.PRINT: case KeywordToken.KEYWORD.RANGE: case KeywordToken.KEYWORD.ASSERT: case KeywordToken.KEYWORD.RANDOM: case KeywordToken.KEYWORD.INPUT:
-                                nodes.Add(get_statement());
-                                break;
-                        }
+                            switch (keyword_token.Keyword) {
+                                case KeywordToken.KEYWORD.PRINT: case KeywordToken.KEYWORD.RANGE: case KeywordToken.KEYWORD.ASSERT: case KeywordToken.KEYWORD.RANDOM: case KeywordToken.KEYWORD.INPUT:
+                                    nodes.Add(get_statement());
+                                    break;
+                            }
                         break;
                     }
                 break;

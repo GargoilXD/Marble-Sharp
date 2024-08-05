@@ -16,9 +16,8 @@ public class InterpreterError : Error {
     public InterpreterError(TYPE type, TokenPosition position = null, string message = "") : base(position, message) {
         Type = type;
     }
-    public InterpreterError ResetPosition(TokenPosition position) {
+    public void ResetPosition(TokenPosition position) {
         Position = position;
-        return this;
     }
     public override string ToString() {
         return Type + Message + IndicateErrorLine();
