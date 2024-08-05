@@ -1,6 +1,6 @@
 public class InterpreterError : Error {
     public enum TYPE {
-        UNCOMPATIBLE_TYPES,
+        INCOMPATIBLE_TYPES,
         INVALID_OPERATION,
         UNDEFINED_IDENTIFIER,
         DATATYPE_MISMATCH,
@@ -9,12 +9,11 @@ public class InterpreterError : Error {
         UNEXPECTED_TOKEN,
         EXPECTED_IDENTIFIER,
         UNINITIALIZED_IDENTIFIER,
-        INCOMPATIBLE_TYPES,
         ASSERTION_FAILED,
         MESSAGE,
     }
     public TYPE Type {private set; get; }
-    public InterpreterError(TYPE type, TokenPosition position, string message = "") : base(position, message) {
+    public InterpreterError(TYPE type, TokenPosition position = null, string message = "") : base(position, message) {
         Type = type;
     }
     public InterpreterError ResetPosition(TokenPosition position) {

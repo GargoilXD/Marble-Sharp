@@ -30,143 +30,138 @@ public class Interpreter {
     private async Task<MarbleData> InterpreteBinaryOperatorNode(BinaryOperatorNode node, InterpreterStorage storage) {
         switch ((node.Operator as OperatorToken).Type) {
             case OperatorToken.OPERATOR.DOT: {
-                break;
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Undone");
             }
             case OperatorToken.OPERATOR.ACCESSOR: {
-                break;
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Undone");
             }
             case OperatorToken.OPERATOR.ADD: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.add(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.SUBTRACT: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.subtract(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.MULTIPLY: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.multiply(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.DIVIDE: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.divide(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.INTEGER_DIVIDE: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.integer_divide(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.EXPONENT: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.exponent(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.MODOLUS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.modolus(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.AND: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.and(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.BITWISE_AND: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.bitwise_and(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.OR: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.or(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.BITWISE_OR: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.bitwise_or(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.IN: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.contains(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.IS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.is_is(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.COLON: {
-                MarbleData Left = await InterpreteNode(node.Left, storage);
-                MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "What?");
             }
             case OperatorToken.OPERATOR.EQUALS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.equals(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.NOT_EQUALS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.not_equals(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.GREATER_THAN: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.greater_than(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.greater_than_or_equals(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.LESSER_THAN: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.lesser_than(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS: {
                 MarbleData Left = await InterpreteNode(node.Left, storage);
                 MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                try { return Left.lesser_than_or_equals(Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
             }
             case OperatorToken.OPERATOR.ASSIGN: {
-                MarbleData Left = await InterpreteNode(node.Left, storage);
-                MarbleData Right = await InterpreteNode(node.Right, storage);
-                return Left.add(Right);
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.add(right)); });
             }
             case OperatorToken.OPERATOR.ADD_AND_ASSIGN: {
                 return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.add(right)); });
             }
             case OperatorToken.OPERATOR.SUBTRACT_AND_ASSIGN: {
-                MarbleData Left = await InterpreteNode(node.Left, storage);
-                MarbleData Right = await InterpreteNode(node.Right, storage);
-                if (Left is MarbleVariant) {
-                    Left.set_data(Right.get_data());
-                }
-                else{
-                    if (Left.GetType() == Right.GetType()) {
-                        Left.set_data(Left.subtract(Right).get_data());
-                    }
-                    else {
-                        MarbleData converted = Left.Convert(Right);
-                        Left.set_data(Left.subtract(converted).get_data());
-                    }
-                }
-                return Left;
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.subtract(right)); });
             }
-            case OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN: {}
-            case OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN: {}
-            case OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN: {}
-            case OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN: {}
-            case OperatorToken.OPERATOR.EXTENDS: {}
-            case OperatorToken.OPERATOR.RUNS: {}
+            case OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN: {
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.multiply(right)); });
+            }
+            case OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN: {
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.divide(right)); });
+            }
+            case OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN: {
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.exponent(right)); });
+            }
+            case OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN: {
+                return await assign_operation(node, storage, delegate (MarbleData left, MarbleData right) { left.set_data(left.modolus(right)); });
+            }
+            case OperatorToken.OPERATOR.EXTENDS: {
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Undone");
+            }
+            case OperatorToken.OPERATOR.RUNS: {
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Undone");
+            }
         }
+        throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Undone");
     }
     private async Task<MarbleData> InterpreteUnaryOperatorNode(UnaryOperatorNode node, InterpreterStorage storage) {
         switch (node.Operator) {
@@ -179,8 +174,8 @@ public class Interpreter {
                         try { return data.negate(); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
                     }
                     case OperatorToken.OPERATOR.SUBTRACT: {
-                       MarbleData data = await InterpreteNode(node.Operand, storage);
-                       if (data is not MarbleInteger && data is not MarbleFloat) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
+                        MarbleData data = await InterpreteNode(node.Operand, storage);
+                        if (data is not MarbleInteger && data is not MarbleFloat) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
                         try { return data.negate(); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
                     }
                 }
@@ -274,17 +269,14 @@ public class Interpreter {
         }
         else {
             if (Left.GetType() == Right.GetType()) {
-                operation(Left, Right);
+                try { operation(Left, Right); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
+                
             }
             else {
-                operation(Left, Left.Convert(Right));
+                try { operation(Left, Left.Convert(Right)); } catch (InterpreterError error) { throw error.ResetPosition(node.Position); }
+                
             }
         }
         return Left;
-    }
-    private async Task<MarbleData> Binary_operation(BinaryOperatorNode node, InterpreterStorage storage, Func<MarbleData> operation){
-        MarbleData Left = await InterpreteNode(node.Left, storage);
-        MarbleData Right = await InterpreteNode(node.Right, storage);
-        return operation();
     }
 }

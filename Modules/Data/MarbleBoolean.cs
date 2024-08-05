@@ -20,11 +20,11 @@ public class MarbleBoolean : MarbleData {
     public override MarbleData Convert(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
-                break;
-            case MarbleInteger:
-                break;
-            case MarbleFloat:
-                break;
+                return operand;
+            case MarbleInteger data:
+                return new MarbleBoolean(data.Value > 0);
+            case MarbleFloat data:
+                return new MarbleBoolean(data.Value > 0);
             case MarbleString:
                 break;
             case MarbleObject:
@@ -36,9 +36,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.UNCOMPATIBLE_TYPES, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData add(MarbleData operand){
+    public override MarbleData add(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -57,9 +57,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData subtract(MarbleData operand){
+    public override MarbleData subtract(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -78,9 +78,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData multiply(MarbleData operand){
+    public override MarbleData multiply(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -99,9 +99,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData divide(MarbleData operand){
+    public override MarbleData divide(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -120,9 +120,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData exponent(MarbleData operand){
+    public override MarbleData integer_divide(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -141,9 +141,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData modolus(MarbleData operand){
+    public override MarbleData exponent(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -162,9 +162,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData and(MarbleData operand){
+    public override MarbleData modolus(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -183,9 +183,30 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData or(MarbleData operand){
+    public override MarbleBoolean and(MarbleData operand) {
+        switch (operand) {
+            case MarbleBoolean data:
+                return new MarbleBoolean(Value && data.Value);
+            case MarbleInteger:
+                break;
+            case MarbleFloat:
+                break;
+            case MarbleString:
+                break;
+            case MarbleObject:
+                break;
+            case MarbleVariant:
+                break;
+            case MarbleList:
+                break;
+            case MarbleDictionary:
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
+    }
+    public override MarbleInteger bitwise_and(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -204,9 +225,30 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData equals(MarbleData operand){
+    public override MarbleBoolean or(MarbleData operand) {
+        switch (operand) {
+            case MarbleBoolean data:
+                return new MarbleBoolean(Value || data.Value);
+            case MarbleInteger:
+                break;
+            case MarbleFloat:
+                break;
+            case MarbleString:
+                break;
+            case MarbleObject:
+                break;
+            case MarbleVariant:
+                break;
+            case MarbleList:
+                break;
+            case MarbleDictionary:
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
+    }
+    public override MarbleInteger bitwise_or(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -225,9 +267,51 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData not_equals(MarbleData operand){
+    public override MarbleBoolean equals(MarbleData operand) {
+        switch (operand) {
+            case MarbleBoolean data:
+                return new MarbleBoolean(Value == data.Value);
+            case MarbleInteger:
+                break;
+            case MarbleFloat:
+                break;
+            case MarbleString:
+                break;
+            case MarbleObject:
+                break;
+            case MarbleVariant:
+                break;
+            case MarbleList:
+                break;
+            case MarbleDictionary:
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
+    }
+    public override MarbleBoolean not_equals(MarbleData operand) {
+        switch (operand) {
+            case MarbleBoolean data:
+                return new MarbleBoolean(Value != data.Value);
+            case MarbleInteger:
+                break;
+            case MarbleFloat:
+                break;
+            case MarbleString:
+                break;
+            case MarbleObject:
+                break;
+            case MarbleVariant:
+                break;
+            case MarbleList:
+                break;
+            case MarbleDictionary:
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
+    }
+    public override MarbleBoolean greater_than(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -246,9 +330,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData greater_than(MarbleData operand){
+    public override MarbleBoolean greater_than_or_equals(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -267,9 +351,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData greater_than_or_equals(MarbleData operand){
+    public override MarbleBoolean lesser_than(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -288,9 +372,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData lesser_than(MarbleData operand){
+    public override MarbleBoolean lesser_than_or_equals(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -309,9 +393,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData lesser_than_or_equals(MarbleData operand){
+    public override MarbleBoolean contains(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -330,9 +414,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData contains(MarbleData operand){
+    public override MarbleBoolean is_is(MarbleData operand) {
         switch (operand) {
             case MarbleBoolean:
                 break;
@@ -351,10 +435,9 @@ public class MarbleBoolean : MarbleData {
             case MarbleDictionary:
                 break;
         }
-        throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, null);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES);
     }
-    public override MarbleData negate(){
-        Value = !Value;
-        return this;
+    public override MarbleData negate() {
+        return new MarbleBoolean(!Value);
     }
 }
