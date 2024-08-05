@@ -5,14 +5,14 @@ using Godot;
 public class Parser {
     private static readonly OperatorToken.OPERATOR[][] PRECEDENCE = new OperatorToken.OPERATOR[][]{
         new[] { OperatorToken.OPERATOR.DOT },
-        new[] { OperatorToken.OPERATOR.IS, OperatorToken.OPERATOR.EXTENDS },
+        new[] { OperatorToken.OPERATOR.IS },
         new[] { OperatorToken.OPERATOR.EXPONENT },
         new[] { OperatorToken.OPERATOR.MODOLUS },
-        new[] { OperatorToken.OPERATOR.MULTIPLY, OperatorToken.OPERATOR.DIVIDE },
+        new[] { OperatorToken.OPERATOR.MULTIPLY, OperatorToken.OPERATOR.DIVIDE, OperatorToken.OPERATOR.INTEGER_DIVIDE },
         new[] { OperatorToken.OPERATOR.ADD, OperatorToken.OPERATOR.SUBTRACT },
         new[] { OperatorToken.OPERATOR.IN },
         new[] { OperatorToken.OPERATOR.EQUALS, OperatorToken.OPERATOR.NOT_EQUALS, OperatorToken.OPERATOR.LESSER_THAN, OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS, OperatorToken.OPERATOR.GREATER_THAN, OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS },
-        new[] { OperatorToken.OPERATOR.AND, OperatorToken.OPERATOR.OR },
+        new[] { OperatorToken.OPERATOR.AND, OperatorToken.OPERATOR.OR, OperatorToken.OPERATOR.BITWISE_AND, OperatorToken.OPERATOR.BITWISE_OR },
         new[] { OperatorToken.OPERATOR.COLON },
         new[] { OperatorToken.OPERATOR.ASSIGN, OperatorToken.OPERATOR.ADD_AND_ASSIGN, OperatorToken.OPERATOR.SUBTRACT_AND_ASSIGN, OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN, OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN, OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN, OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN },
     };
@@ -108,10 +108,7 @@ public class Parser {
                         next_token();
                         return expression;
                     case SymbolToken.SYMBOL.LEFT_CURLY_BRACKET:
-                        next_token();
-                        Dictionary<Token, Node> dictionary = new Dictionary<Token, Node>();
-                        while (!(CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_SQUARE_BRACKET) || CurrentToken.is_symbol(SymbolToken.SYMBOL.END))) {
-                            while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
+                        return new DataNode(DataNode.TYPE.DICTIONARY, get_bracket_nodes(symbol_token.Symbol, "[", "]", delegate {
                             if (CurrentToken is not DataToken) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected data key");
                             if (CurrentToken.is_data(DataToken.TYPE.OBJECT)) throw new Error(CurrentToken.Position, "Key can not be object");
                             if (CurrentToken.is_data(DataToken.TYPE.VARIANT)) throw new Error(CurrentToken.Position, "Key can not be null");
@@ -119,14 +116,8 @@ public class Parser {
                             next_token();
                             if (!CurrentToken.is_operator(OperatorToken.OPERATOR.COLON)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "':'");
                             next_token();
-                            dictionary.Add(key, get_operand_node());
-                            if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.COMMA)) break;
-                            next_token();
-                        }
-                        while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
-                        if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET)) throw new ParserError(ParserError.TYPE.UNCLOSED_BRACKETS, CurrentToken.Position);
-                        next_token();
-                        return new DataNode(DataNode.TYPE.DICTIONARY, dictionary, symbol_token.Position + PreviousToken.Position);
+                            return new DataNode(DataNode.TYPE.DICTIONARY, new Dictionary<string, object>(){{"Token", key}, {"Node", get_operand_node()}}, null); //***
+                        }), symbol_token.Position + PreviousToken.Position);
                     case SymbolToken.SYMBOL.LEFT_SQUARE_BRACKET:
                         return new DataNode(DataNode.TYPE.LIST, get_bracket_nodes(symbol_token.Symbol, "[", "]", get_expression), symbol_token.Position + PreviousToken.Position);
                     case SymbolToken.SYMBOL.END: case SymbolToken.SYMBOL.END_OF_LINE:
@@ -150,13 +141,14 @@ public class Parser {
                             case DataToken: {
                                 UnaryOperatorNode unary = new UnaryOperatorNode(keyword_token, get_operand_node());
                                 if (keyword_token.Keyword == KeywordToken.KEYWORD.ENUMERATION) {
+                                    throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, keyword_token.Position);/*
                                     List<Node> enumerations = get_bracket_nodes(SymbolToken.SYMBOL.LEFT_CURLY_BRACKET, "{", "}", delegate {
                                         if (!CurrentToken.is_data(DataToken.TYPE.IDENTIFIER)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                         next_token();
                                         return DataNode.FromToken(PreviousToken as DataToken);
                                     });
                                     if (enumerations.Count == 0) throw new Error(keyword_token.Position + PreviousToken.Position, "Empty enumeration");
-                                    return new EnumerationDefinitionNode(unary, enumerations, unary.Position + PreviousToken.Position);
+                                    return new EnumerationDefinitionNode(unary, enumerations, unary.Position + PreviousToken.Position);*/
                                 }
                                 return unary;
                             }
@@ -318,7 +310,7 @@ public class Parser {
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "')'");
                                     next_token();
                                     UnaryOperatorNode unary = new UnaryOperatorNode(keyword_token, iterator_statement);
-                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position),  get_instruction_list_node()));
+                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position), get_instruction_list_node()));
                                     break;
                                 }
                                 case KeywordToken.KEYWORD.WHILE: {
@@ -326,7 +318,7 @@ public class Parser {
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "'('");
                                     Node expression = get_expression();
                                     UnaryOperatorNode unary = new UnaryOperatorNode(keyword_token, expression);
-                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position),  get_instruction_list_node()));
+                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position), get_instruction_list_node()));
                                     break;
                                 }
                             }

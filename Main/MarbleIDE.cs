@@ -17,8 +17,8 @@ public partial class MarbleIDE : Control {
     private AcceptDialog Input_Dialog;
 
     Tokenizer Tokenizer_object = new Tokenizer();
-    Parser Parser_object =  new Parser();
-    //var Interpreter_object:Interpreter = Interpreter.new ()
+    Parser Parser_object = new Parser();
+    Interpreter Interpreter_object = new Interpreter();
 
     public override void _Ready() {
         Save_data = (SaveData) ResourceLoader.Load("res://Configurations/Save_data.tres");
@@ -51,7 +51,7 @@ public partial class MarbleIDE : Control {
             }
         };
 
-        //Interpreter_object.PopUp_input = accept_dialog;
+        Interpreter.InputGetter = (AcceptDialog) GetNode("%InputGetter");
         CodeHighlighter Highlighter = new CodeHighlighter();
         Highlighter.NumberColor = Color.FromString("LIGHT_GREEN", Color.Color8(0,0,0));
         Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
@@ -119,6 +119,12 @@ public partial class MarbleIDE : Control {
             Display_data(DISPLAY.PARSER, string.Join("\n", nodes));
             if (Stop_at == DISPLAY.PARSER){
                 Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
+                return;
+            }
+            Interpreter_object.Interprete(nodes, new InterpreterStorage());
+            Display_data(DISPLAY.INTERPRETER, Interpreter_object.Output);
+            if (Stop_at == DISPLAY.INTERPRETER){
+                Stage_tabs.CurrentTab = (int) DISPLAY.INTERPRETER;
                 return;
             }
         } catch (Error error) {

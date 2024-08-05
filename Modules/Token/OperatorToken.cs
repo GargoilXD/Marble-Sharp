@@ -1,6 +1,7 @@
 public class OperatorToken : Token {
     public enum OPERATOR {
         DOT,
+        ACCESSOR,
         NOT,
         ADD,
         SUBTRACT,
@@ -31,7 +32,6 @@ public class OperatorToken : Token {
         MODOLUS_AND_ASSIGN,
         EXTENDS,
         RUNS,
-        ACCESSOR
     }
     public OPERATOR Type {private set; get;}
     public OperatorToken(OPERATOR type, TokenPosition position) : base(position) {

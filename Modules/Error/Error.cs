@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 public class Error : Exception {
-    private TokenPosition Position;
+    protected TokenPosition Position;
     public Error(TokenPosition position, string message = "") : base(string.IsNullOrEmpty(message)? "" : $" : {message}") {
         Position = position;
     }
