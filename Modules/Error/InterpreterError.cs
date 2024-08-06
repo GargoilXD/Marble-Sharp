@@ -1,5 +1,6 @@
 public class InterpreterError : Error {
     public enum TYPE {
+        UNIMPLEMENTED_FEATURE,
         INCOMPATIBLE_TYPES,
         INVALID_OPERATION,
         UNDEFINED_IDENTIFIER,
@@ -13,11 +14,8 @@ public class InterpreterError : Error {
         MESSAGE,
     }
     public TYPE Type {private set; get; }
-    public InterpreterError(TYPE type, TokenPosition position = null, string message = "") : base(position, message) {
+    public InterpreterError(TYPE type, TokenPosition position, string message = "") : base(position, message) {
         Type = type;
-    }
-    public void ResetPosition(TokenPosition position) {
-        Position = position;
     }
     public override string ToString() {
         return Type + Message + IndicateErrorLine();

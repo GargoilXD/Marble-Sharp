@@ -5,11 +5,20 @@
 [resource]
 script = ExtResource("1_75tjt")
 Stop_at = 2
-Code = "boolean B = true
-integer I = 2
-float F = 0.5
-string Name = \"Kobby\"
-Print(B)
-Print(I)
-Print(F)
-Print(Name)"
+Code = "for (integer x = 0 in 5) {
+	if (x == 0) {
+		Print(\"Hi\")
+	} elseif (x == 1) {
+		Print(\"Hii\")
+	} elseif (x == 2) {
+		Print(\"Hiii\")
+	} else {
+		break
+	}
+}
+for (integer x = 0 in 5) {
+	if (x == 2) {
+		continue
+	}
+	Print(x)
+}"

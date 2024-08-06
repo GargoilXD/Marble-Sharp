@@ -4,7 +4,6 @@ public class IFNode : Node {
     public InstructionListNode Implication {private set; get;}
     public List<IFNode> Children {private set; get;}
     public InstructionListNode Inverse {private set; get;}
-
     public IFNode(Node expression, InstructionListNode implication, List<IFNode> children, InstructionListNode inverse, TokenPosition position) : base(position){
         Expression = expression;
         Implication = implication;

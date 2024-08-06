@@ -279,7 +279,7 @@ public class Parser {
                                         KeywordToken else_if_token = CurrentToken as KeywordToken;
                                         next_token();
                                         if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "'('");
-                                        children.Add(new IFNode(get_expression(), get_instruction_list_node(), null, null, else_if_token.Position + PreviousToken.Position));
+                                        children.Add(new IFNode(get_operand_node(), get_instruction_list_node(), null, null, else_if_token.Position + PreviousToken.Position));
                                     }
                                     InstructionListNode inverse = null;
                                     if (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE)) {
@@ -311,19 +311,23 @@ public class Parser {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "'('");
                                     next_token();
-                                    Node iterator_statement = get_statement();
+                                    Node iterator = get_binary_node(get_unary_node, new[] { OperatorToken.OPERATOR.ASSIGN });
+                                    if (!CurrentToken.is_operator(OperatorToken.OPERATOR.IN))  throw new ParserError(ParserError.TYPE.EXPECTED_OPERATOR, CurrentToken.Position, "'in'");
+                                    OperatorToken In = CurrentToken as OperatorToken;
+                                    next_token();
+                                    Node iteratable = get_operand_node();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "')'");
                                     next_token();
-                                    UnaryOperatorNode unary = new UnaryOperatorNode(keyword_token, iterator_statement);
-                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position), get_instruction_list_node()));
+                                    InstructionListNode instructions = get_instruction_list_node();
+                                    nodes.Add(new ForNode(iterator, iteratable, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }
                                 case KeywordToken.KEYWORD.WHILE: {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.EXPECTED_TOKEN, CurrentToken.Position, "'('");
-                                    Node expression = get_expression();
-                                    UnaryOperatorNode unary = new UnaryOperatorNode(keyword_token, expression);
-                                    nodes.Add(new BinaryOperatorNode(unary, new OperatorToken(OperatorToken.OPERATOR.RUNS, unary.Position), get_instruction_list_node()));
+                                    Node expression = get_operand_node();
+                                    InstructionListNode instructions = get_instruction_list_node();
+                                    nodes.Add(new WhileNode(expression, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }
                             }

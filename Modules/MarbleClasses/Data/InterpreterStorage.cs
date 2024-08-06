@@ -55,16 +55,16 @@ public class InterpreterStorage {
             }
         }
     }
-	public MarbleData GetVariable(string name) {
+	public MarbleData GetVariable(string name, TokenPosition position) {
 		if (Variables.ContainsKey(name)){
 			return Variables[name];
         }
 		else {
 			if (Parent != null) {
-				return Parent.GetVariable(name);
+				return Parent.GetVariable(name, position);
             }
         }
-        throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER);
+        throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, position);
     }
     public override string ToString(){
         return $"Variables:\n{string.Join("\n", Variables)}";
