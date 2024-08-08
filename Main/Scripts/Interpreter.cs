@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Godot;
 
 public class Interpreter {
     public static InputGetter Input_dialog;
@@ -9,45 +11,79 @@ public class Interpreter {
         foreach (Node node in nodes) {
             InterpreterOutput output = await InterpreteNode(node, storage) ;
         }
-        return new ContextControl(ContextControl.TYPE.DONE);
+        return new FlowController(FlowController.TYPE.DONE);
     }
     private async Task<InterpreterOutput> InterpreteNode(Node node, InterpreterStorage storage) => node switch {
         EnumerationDefinitionNode switch_node => await InterpreteEnumerationDefinitionNode(switch_node, storage),
-        FunctionDefinitionNode switch_node => await InterpreteFunctionDefinitionNode(switch_node, storage),
+        FunctionDefinitionNode switch_node => InterpreteFunctionDefinitionNode(switch_node, storage),
 
         BinaryOperatorNode switch_node => await InterpreteBinaryOperatorNode(switch_node, storage),
         UnaryOperatorNode switch_node => await InterpreteUnaryOperatorNode(switch_node, storage),
-        KeywordNode switch_node => InterpreteKeywordNode(switch_node, storage),
         DataNode switch_node => await InterpreteDataNode(switch_node, storage),
 
         FunctionNode switch_node => await InterpreteFunctionNode(switch_node, storage),
 
+        FlowControlNode switch_node => await InterpreteFlowControlNode(switch_node, storage),
         WhileNode switch_node => await InterpreteWhileNode(switch_node, storage),
         ForNode switch_node => await InterpreteForNode(switch_node, storage),
         IFNode switch_node => await InterpreteIFNode(switch_node, storage),
-        _ => null
+        _ => throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position, "new node?")
     };
     
-    private async Task<ContextControl> InterpreteInstructionListNode(InstructionListNode node, InterpreterStorage storage) {
+    private async Task<FlowController> InterpreteInstructionListNode(InstructionListNode node, InterpreterStorage storage) {
         foreach (Node statement in node.Instructions) {
             InterpreterOutput result = await InterpreteNode(statement, storage);
-            if (result is ContextControl && (result as ContextControl).Type != ContextControl.TYPE.DONE) return result as ContextControl;
+            if (result is FlowController && (result as FlowController).Type != FlowController.TYPE.DONE) return result as FlowController;
         }
-        return new ContextControl(ContextControl.TYPE.DONE);
+        return new FlowController(FlowController.TYPE.DONE);
     }
     private Task<InterpreterOutput> InterpreteEnumerationDefinitionNode(EnumerationDefinitionNode node, InterpreterStorage storage) {
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private Task<InterpreterOutput> InterpreteFunctionDefinitionNode(FunctionDefinitionNode node, InterpreterStorage storage) {
-        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+    private InterpreterOutput InterpreteFunctionDefinitionNode(FunctionDefinitionNode node, InterpreterStorage storage) {
+        string identifier = (node.Identifier as DataToken).Data as string;
+        if (storage.HasFunction(identifier)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_FUNCTION, node.Identifier.Position);
+        storage.CreateFunction(identifier, node);
+        return null;
     }
     private async Task<MarbleData> InterpreteBinaryOperatorNode(BinaryOperatorNode node, InterpreterStorage storage) {
         switch ((node.Operator as OperatorToken).Type) {
             case OperatorToken.OPERATOR.DOT: {
-                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                MarbleData Left = (await InterpreteNode(node.Left, storage)).IsMarbleData(node.Left.Position);
+                switch (Left) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
+                        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
+                    case MarbleList data:
+                        if (node.Right is not FunctionNode) throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Right.Position);
+                        FunctionNode function = node.Right as FunctionNode;
+                        switch ((function.Identifier as DataToken).Data as string) {
+                            case "append":
+                                if (function.Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                MarbleData new_element = (await InterpreteNode(function.Arguments[0], storage)).IsMarbleData(function.Arguments[0].Position);
+                                data.Elements.Add(new_element);
+                                break;
+                            default:
+                                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                        }
+                        break;
+                }
+                return Left;
             }
             case OperatorToken.OPERATOR.ACCESSOR: {
-                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                MarbleData Left = (await InterpreteNode(node.Left, storage)).IsMarbleData(node.Left.Position);
+                MarbleList Right = (await InterpreteNode(node.Right, storage)).IsMarbleData(node.Right.Position) as MarbleList;
+                switch (Left) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
+                        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
+                    case MarbleList data:
+                        if (Right.Elements.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                        MarbleData index = Right.Elements[0];
+                        if (index is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
+                        int value = (int) index.get_data();
+                        if (value >= data.Elements.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
+                        return data.Elements[value];
+                }
+                return Left;
             }
             case OperatorToken.OPERATOR.ADD: {
                 MarbleData Left = (await InterpreteNode(node.Left, storage)).IsMarbleData(node.Left.Position);
@@ -235,7 +271,6 @@ public class Interpreter {
 						Input_dialog.DialogText = $"{(await InterpreteNode(node.Arguments[0], storage)).IsMarbleData(node.Arguments[0].Position)}";
 						Input_dialog.Show();
                         await Input_dialog.ToSignal(Input_dialog, "confirmed");
-                        //return new ContextOutput(ContextControl.TYPE.RETURN, new MarbleString(Input_dialog.Input));
 						return new MarbleString(Input_dialog.Input);
                     }
                     case KeywordToken.KEYWORD.PRINT: {
@@ -243,27 +278,62 @@ public class Interpreter {
 							Output += $"{(await InterpreteNode(argument, storage)).IsMarbleData(argument.Position)} ";
                         }
 						Output += '\n';
-						return new ContextControl(ContextControl.TYPE.DONE);
+						return new FlowController(FlowController.TYPE.DONE);
                     }
-                    case KeywordToken.KEYWORD.RANGE:
+                    case KeywordToken.KEYWORD.RANGE: {
+                        if (node.Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+						MarbleData data = (await InterpreteNode(node.Arguments[0], storage)).IsMarbleData(node.Arguments[0].Position);
+                        if (data is not MarbleInteger)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Position);
+						List<MarbleData> elements = new List<MarbleData>();
+                        for (int x = 0; x < (data as MarbleInteger).Value; x++) {
+                            elements.Add(new MarbleInteger(x));
+                        }
+						return new MarbleList(elements);
+                    }
+                    case KeywordToken.KEYWORD.RANDOM: {
+                        if (node.Arguments.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                        MarbleData left = (await InterpreteNode(node.Arguments[0], storage)).IsMarbleData(node.Arguments[0].Position);
+                        if (left is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Arguments[0].Position);
+                        MarbleData right = (await InterpreteNode(node.Arguments[1], storage)).IsMarbleData(node.Arguments[1].Position);
+                        if (right is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Arguments[1].Position);
+                        int random_number = new Random().Next((int) left.get_data(), (int) right.get_data());
+                        return new MarbleInteger(random_number);
+                    }
                     case KeywordToken.KEYWORD.ASSERT:
-                    case KeywordToken.KEYWORD.RANDOM:
                         break;
                 }
                 break;
-            case DataToken:
+            case DataToken identifier:
+                if (!storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, identifier.Position);
+                InterpreterStorage child_storage = storage.CreateChild();
+                FunctionDefinitionNode function = storage.GetFunction(identifier.Data as string);
+                if (node.Arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
+                for (int x = 0; x < function.Arguments.Count; x++) {
+                    MarbleData variable = (await InterpreteNode(function.Arguments[x], child_storage)).IsMarbleData(function.Arguments[x].Position);
+                    MarbleData data = (await InterpreteNode(node.Arguments[x], child_storage)).IsMarbleData(node.Arguments[x].Position);
+                    if (variable is MarbleVariant) {
+                        variable.set_data(data.get_data());
+                    }
+                    else {
+                        if (variable.GetType() == data.GetType()) {
+                            variable.set_data(data.get_data());
+                        }
+                        else {
+                            variable.set_data(variable.convert(data, node.Arguments[x].Position).get_data());
+                        }
+                    }
+                    variable.Initialized = true;
+                }
+                FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
+                switch (output.Type) {
+                    case FlowController.TYPE.CONTINUE: case FlowController.TYPE.BREAK:
+                        throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Unexpected Keyword");
+                    case FlowController.TYPE.RETURN:
+                        return output.Data;
+                    case FlowController.TYPE.DONE:
+                        break;
+                }
                 break;
-        }
-        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
-    }
-    private InterpreterOutput InterpreteKeywordNode(KeywordNode node, InterpreterStorage storage) {
-        switch (node.Keyword) {
-            case KeywordToken.KEYWORD.BREAKPOINT:
-                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
-            case KeywordToken.KEYWORD.BREAK:
-                return new ContextControl(ContextControl.TYPE.BREAK);
-            case KeywordToken.KEYWORD.CONTINUE: 
-                return new ContextControl(ContextControl.TYPE.CONTINUE);
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
@@ -289,26 +359,40 @@ public class Interpreter {
                 return new MarbleList(elements);
             }
             case DataNode.TYPE.IDENTIFIER:
-                MarbleData variable;
-                variable = storage.GetVariable(node.Data as string, node.Position);
+                if (!storage.HasVariable(node.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, node.Position);
+                MarbleData variable = storage.GetVariable(node.Data as string);
                 if (!variable.Initialized && !storage.CanGetUninitializedVariable) throw new InterpreterError(InterpreterError.TYPE.UNINITIALIZED_IDENTIFIER, node.Position);
                 if (variable is MarbleVariant) return (variable as MarbleVariant).ToStatic(node.Position);
                 return variable;
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private async Task<ContextControl> InterpreteWhileNode(WhileNode node, InterpreterStorage storage) {
-        while (MarbleBoolean.Convert((await InterpreteNode(node.Expression, storage)).IsMarbleData(node.Expression.Position), node.Expression.Position).Value) {
-            ContextControl breaker = await InterpreteInstructionListNode(node.Instructions, storage);
-            if (breaker.Type == ContextControl.TYPE.CONTINUE) continue;
-            if (breaker.Type == ContextControl.TYPE.BREAK) break;
-            if (breaker is ContextOutput) return breaker;
+    private async Task<FlowController> InterpreteFlowControlNode(FlowControlNode node, InterpreterStorage storage) {
+        switch (node.Type) {
+            case FlowController.TYPE.BREAKPOINT:
+                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+            case FlowController.TYPE.RETURN:
+                return new FlowController(FlowController.TYPE.RETURN, (await InterpreteNode(node.Data, storage)).IsMarbleData(node.Data.Position));
+            case FlowController.TYPE.BREAK:
+                return new FlowController(FlowController.TYPE.BREAK);
+            case FlowController.TYPE.CONTINUE:
+                return new FlowController(FlowController.TYPE.CONTINUE);
         }
-        return new ContextControl(ContextControl.TYPE.DONE);
+        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private async Task<ContextControl> InterpreteForNode(ForNode node, InterpreterStorage storage) {
+    private async Task<FlowController> InterpreteWhileNode(WhileNode node, InterpreterStorage storage) {
+        while (MarbleBoolean.Convert((await InterpreteNode(node.Expression, storage)).IsMarbleData(node.Expression.Position), node.Expression.Position).Value) {
+            FlowController breaker = await InterpreteInstructionListNode(node.Instructions, storage);
+            if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
+            if (breaker.Type == FlowController.TYPE.BREAK) break;
+            if (breaker.Type == FlowController.TYPE.RETURN) return breaker;
+        }
+        return new FlowController(FlowController.TYPE.DONE);
+    }
+    private async Task<FlowController> InterpreteForNode(ForNode node, InterpreterStorage storage) {
         InterpreterStorage child_storage = storage.CreateChild();
         MarbleData Interator = (await InterpreteNode(node.Iterator, child_storage)).IsMarbleData(node.Iterator.Position);
+        Interator.Initialized = true;
         MarbleData Interatable = (await InterpreteNode(node.Iteratable, child_storage)).IsMarbleData(node.Iteratable.Position);
         switch (Interatable) {
             case MarbleBoolean: case MarbleFloat:
@@ -318,37 +402,37 @@ public class Interpreter {
                 int start = (int) Interator.get_data();
                 for (int x = start; x < integer.Value; x++) {
                     Interator.set_data(x);
-                    ContextControl breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
-                    if (breaker.Type == ContextControl.TYPE.CONTINUE) continue;
-                    if (breaker.Type == ContextControl.TYPE.BREAK) break;
-                    if (breaker is ContextOutput) return breaker;
+                    FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
+                    if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
+                    if (breaker.Type == FlowController.TYPE.BREAK) break;
+                    if (breaker.Type == FlowController.TYPE.RETURN) return breaker;
                 }
                 break;
             case MarbleString data:
                 if (Interator is not MarbleString || Interator is not MarbleVariant) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Iteratable.Position);
                 foreach (char item in data.Value) {
                     Interator.set_data(item + "");
-                    ContextControl breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
-                    if (breaker.Type == ContextControl.TYPE.CONTINUE) continue;
-                    if (breaker.Type == ContextControl.TYPE.BREAK) break;
-                    if (breaker is ContextOutput) return breaker;
+                    FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
+                    if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
+                    if (breaker.Type == FlowController.TYPE.BREAK) break;
+                    if (breaker.Type == FlowController.TYPE.RETURN) return breaker;
                 }
                 break;
                 case MarbleList list:
                 foreach (MarbleData element in list.Elements) {
                     Interator.set_data(Interator.convert(element, node.Iterator.Position).get_data());
-                    ContextControl breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
-                    if (breaker.Type == ContextControl.TYPE.CONTINUE) continue;
-                    if (breaker.Type == ContextControl.TYPE.BREAK) break;
-                    if (breaker is ContextOutput) return breaker;
+                    FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
+                    if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
+                    if (breaker.Type == FlowController.TYPE.BREAK) break;
+                    if (breaker.Type == FlowController.TYPE.RETURN) return breaker;
                 }
                 break;
                 case MarbleDictionary:
                     throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
         }
-        return new ContextControl(ContextControl.TYPE.DONE);
+        return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<ContextControl> InterpreteIFNode(IFNode node, InterpreterStorage storage) {
+    private async Task<FlowController> InterpreteIFNode(IFNode node, InterpreterStorage storage) {
         if (MarbleBoolean.Convert((await InterpreteNode(node.Expression, storage)).IsMarbleData(node.Expression.Position), node.Expression.Position).Value) {
             return await InterpreteInstructionListNode(node.Implication, storage);
         } else {
@@ -362,7 +446,7 @@ public class Interpreter {
                 return await InterpreteInstructionListNode(node.Inverse, storage);
             }
         }
-        return new ContextControl(ContextControl.TYPE.DONE);
+        return new FlowController(FlowController.TYPE.DONE);
     }
     private async Task<MarbleData> assign_operation(BinaryOperatorNode node, InterpreterStorage storage, Action<MarbleData, MarbleData> operation) {
         storage.CanGetUninitializedVariable = true;
@@ -370,19 +454,19 @@ public class Interpreter {
         storage.CanGetUninitializedVariable = false;
         MarbleData Right = (await InterpreteNode(node.Right, storage)).IsMarbleData(node.Right.Position);
         if (Left is MarbleVariant) {
-            Left.set_data(Right.get_data());
-            Left.Initialized = true;
+            MarbleData data = (Left as MarbleVariant).ToStatic(node.Left.Position);
+            operation(data, Left.convert(Right, node.Right.Position));
+            Left.set_data(data.get_data());
         }
         else {
             if (Left.GetType() == Right.GetType()) {
                 operation(Left, Right);
-                Left.Initialized = true;
             }
             else {
                 operation(Left, Left.convert(Right, node.Right.Position));
-                Left.Initialized = true;
             }
         }
+        Left.Initialized = true;
         return Left;
     }
 }

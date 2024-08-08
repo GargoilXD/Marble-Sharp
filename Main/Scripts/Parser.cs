@@ -171,7 +171,8 @@ public class Parser {
                                 }
                                 break;
                         }
-                        return KeywordNode.FromToken(keyword_token);
+                        throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, keyword_token.Position);
+                        //return KeywordNode.FromToken(keyword_token);
                     case KeywordToken.KEYWORD.PRINT: case KeywordToken.KEYWORD.RANGE: case KeywordToken.KEYWORD.ASSERT: case KeywordToken.KEYWORD.RANDOM: case KeywordToken.KEYWORD.INPUT:
                         return get_operand_node();
                     default:
@@ -297,12 +298,18 @@ public class Parser {
                             switch (keyword_token.Keyword) {
                                 case KeywordToken.KEYWORD.RETURN:
                                     next_token();
-                                    nodes.Add(new UnaryOperatorNode(keyword_token, get_expression()));
+                                    nodes.Add(new FlowControlNode(FlowController.TYPE.RETURN, get_expression(), keyword_token.Position + PreviousToken.Position));
                                     break;
-                                case KeywordToken.KEYWORD.BREAK: case KeywordToken.KEYWORD.CONTINUE: case KeywordToken.KEYWORD.BREAKPOINT:
+                                case KeywordToken.KEYWORD.BREAK:
                                     next_token();
-                                    nodes.Add(KeywordNode.FromToken(keyword_token));
+                                    nodes.Add(new FlowControlNode(FlowController.TYPE.BREAK, null, keyword_token.Position + PreviousToken.Position));
                                     break;
+                                case KeywordToken.KEYWORD.CONTINUE:
+                                    next_token();
+                                    nodes.Add(new FlowControlNode(FlowController.TYPE.CONTINUE, null, keyword_token.Position + PreviousToken.Position));
+                                    break;
+                                case KeywordToken.KEYWORD.BREAKPOINT:
+                                    throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, CurrentToken.Position);
                             }
                             break;
                         case KeywordToken.TYPE.LOOP:

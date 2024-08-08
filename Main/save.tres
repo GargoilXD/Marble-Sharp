@@ -1,0 +1,36 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Configurations/SaveData.cs" id="1_75tjt"]
+
+[resource]
+script = ExtResource("1_75tjt")
+Stop_at = 2
+Code = "function Make_random_sample(integer Size, integer lower, integer upper) {
+	list sample = []
+	for (integer x in Range(Size)) {
+		sample.append(Random(lower, upper))
+	}
+	return sample
+}
+
+list Computer_numbers = Make_random_sample(5, 0, 10)
+integer Size = 5
+list Responses = []
+
+for (integer x in Range(Size)) {
+	Responses.append(Input('Guess a number:'))
+}
+
+integer number_matched = 0
+for (integer x in Range(Size)) {
+	for (integer y in Range(Size)) {
+		if (Responses[x] == (Computer_numbers[y] + '')) {
+			number_matched += 1
+		}
+	}
+}
+
+Print('The computer chose:', Computer_numbers)
+Print('You chose:', Responses)
+Print('There were', number_matched, 'Matches')
+"

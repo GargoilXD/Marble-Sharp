@@ -1,13 +1,16 @@
-public class ContextControl : InterpreterOutput {
+public class FlowController : InterpreterOutput {
     public enum TYPE {
         DONE,
         RETURN,
         BREAK,
-        CONTINUE
+        CONTINUE,
+        BREAKPOINT
     }
     public TYPE Type;
-    public ContextControl(TYPE type) {
+    public MarbleData Data;
+    public FlowController(TYPE type, MarbleData data = null) {
         Type = type;
+        Data = data;
     }
     public override string ToString() {
         return Type.ToString();

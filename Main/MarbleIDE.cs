@@ -9,7 +9,7 @@ public partial class MarbleIDE : Control {
     }
     public static string EditorCode {private set; get;} = "";
     private DISPLAY Stop_at;
-    private SaveData Save_data;
+    private EditorSave Save_data;
     private CodeEdit Editor;
     private TabContainer Stage_tabs;
     private OptionButton Stage_option_button;
@@ -22,7 +22,7 @@ public partial class MarbleIDE : Control {
 
     public override void _Ready() {
         base._Ready();
-        Save_data = (SaveData) ResourceLoader.Load("res://Configurations/Save_data.tres");
+        Save_data = (EditorSave) ResourceLoader.Load("res://Main/save.tres");
         Editor = (CodeEdit) GetNode("%Editor");
         Stage_tabs = (TabContainer) GetNode("%StageTabs");
         Stage_option_button = (OptionButton) GetNode("%StageOptionButton");

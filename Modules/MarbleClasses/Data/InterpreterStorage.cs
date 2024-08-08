@@ -2,15 +2,15 @@ using System.Collections.Generic;
 public class InterpreterStorage {
 	private InterpreterStorage Parent;
 	private Dictionary<string, MarbleData> Variables;
-	private Dictionary<string, object> Functions;
+	private Dictionary<string, FunctionDefinitionNode> Functions;
     public bool CanGetUninitializedVariable;
 	public InterpreterStorage() {
         Variables = new Dictionary<string, MarbleData>();
-        Functions = new Dictionary<string, object>();
+        Functions = new Dictionary<string, FunctionDefinitionNode>();
         Parent = null;
         CanGetUninitializedVariable = false;
     }
-	public InterpreterStorage(Dictionary<string, MarbleData> variables, Dictionary<string, object> functions) {
+	public InterpreterStorage(Dictionary<string, MarbleData> variables, Dictionary<string, FunctionDefinitionNode> functions) {
         Variables = variables;
         Functions = functions;
         Parent = null;
@@ -19,7 +19,7 @@ public class InterpreterStorage {
 	public InterpreterStorage(InterpreterStorage parent) {
         Parent = parent;
         Variables = new Dictionary<string, MarbleData>();
-        Functions = new Dictionary<string, object>();
+        Functions = new Dictionary<string, FunctionDefinitionNode>();
         CanGetUninitializedVariable = false;
     }
 	public InterpreterStorage CreateChild() {
@@ -55,16 +55,39 @@ public class InterpreterStorage {
             }
         }
     }
-	public MarbleData GetVariable(string name, TokenPosition position) {
+	public MarbleData GetVariable(string name) {
 		if (Variables.ContainsKey(name)){
 			return Variables[name];
         }
 		else {
 			if (Parent != null) {
-				return Parent.GetVariable(name, position);
+				return Parent.GetVariable(name);
             }
         }
-        throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, position);
+        return null;
+    }
+    public void CreateFunction(string name, FunctionDefinitionNode definition) {
+        Functions[name] = definition;
+    }
+    public bool HasFunction(string name) {
+        bool has = Functions.ContainsKey(name);
+		if (!has) {
+			if (Parent != null) {
+				has = Parent.HasFunction(name);
+            }
+        }
+		return has;
+    }
+    public FunctionDefinitionNode GetFunction(string name) {
+        if (Functions.ContainsKey(name)){
+			return Functions[name];
+        }
+		else {
+			if (Parent != null) {
+				return Parent.GetFunction(name);
+            }
+        }
+        return null;
     }
     public override string ToString(){
         return $"Variables:\n{string.Join("\n", Variables)}";
