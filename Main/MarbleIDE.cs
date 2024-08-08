@@ -22,7 +22,7 @@ public partial class MarbleIDE : Control {
 
     public override void _Ready() {
         base._Ready();
-        Save_data = (EditorSave) ResourceLoader.Load("res://Main/save.tres");
+        Save_data = (EditorSave) ResourceLoader.Load("res://Main/Save/save.tres");
         Editor = (CodeEdit) GetNode("%Editor");
         Stage_tabs = (TabContainer) GetNode("%StageTabs");
         Stage_option_button = (OptionButton) GetNode("%StageOptionButton");
@@ -94,7 +94,7 @@ public partial class MarbleIDE : Control {
         if (@event.IsActionPressed("Save")) {
             Save_data.Code = Editor.Text;
             Save_data.Stop_at = Stop_at;
-            Godot.Error State = ResourceSaver.Save(Save_data, "res://Configurations/Save_data.tres");
+            Godot.Error State = ResourceSaver.Save(Save_data, "res://Main//Save/save.tres");
             if (State == Godot.Error.Ok) {
                 Displays[(int) Stop_at].AppendText("Save Successful");
                 Displays[(int) Stop_at].Newline();

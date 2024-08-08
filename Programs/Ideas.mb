@@ -1,0 +1,17 @@
+integer add = Function (integer a, integer b) {
+    return a + b
+}
+integer a = if ( x == 0 ) {
+    give 2
+} elseif ( x == 1) {
+    give 3
+} else {
+    give 4
+}
+integer b = for (integer x = 0 in 5) {
+    give x * 5
+}
+integer c = while (x < 0) {
+    give x * 5
+    x += 1
+}

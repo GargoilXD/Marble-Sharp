@@ -259,10 +259,12 @@ public class Parser {
                     switch (keyword_token.Type) {
                         case KeywordToken.TYPE.DATATYPE:
                             switch (keyword_token.Keyword) {
-                                case KeywordToken.KEYWORD.OBJECT:
+                                case KeywordToken.KEYWORD.ENUMERATION: case KeywordToken.KEYWORD.OBJECT:
                                     throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, CurrentToken.Position);
-                                default:
-                                    nodes.Add(get_statement());
+                                case KeywordToken.KEYWORD.VARIANT: case KeywordToken.KEYWORD.INTEGER: case KeywordToken.KEYWORD.BOOLEAN: case KeywordToken.KEYWORD.FLOAT: case KeywordToken.KEYWORD.STRING: case KeywordToken.KEYWORD.LIST: case KeywordToken.KEYWORD.DICTIONARY:
+                                    next_token();
+                                    if (!CurrentToken.is_data(DataToken.TYPE.IDENTIFIER)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                                    nodes.Add(new UnaryOperatorNode(keyword_token, get_binary_node(get_operand_node, new [] {OperatorToken.OPERATOR.ASSIGN})));
                                     break;
                             }
                             break;
