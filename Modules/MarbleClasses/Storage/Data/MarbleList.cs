@@ -4,7 +4,7 @@ using System.Linq;
 
 public class MarbleList : MarbleData {
     public List<MarbleData> Elements;
-    public MarbleList(List<MarbleData> elements, bool initialized = true) : base(initialized) {
+    public MarbleList(List<MarbleData> elements) {
         Elements = elements;
     }
     public override MarbleList Duplicate() {
@@ -34,7 +34,7 @@ public class MarbleList : MarbleData {
                 }
                 return new MarbleList(new_list);
             }
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleObject: case MarbleList: case MarbleDictionary:
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -60,7 +60,7 @@ public class MarbleList : MarbleData {
                 List<MarbleData> new_list = new List<MarbleData>();
                 for (int x = 0; x < MarbleInteger.Convert(operand, position).Value; x++) new_list.AddRange(Duplicate().Elements);
                 return new MarbleList(new_list);
-            case MarbleString: case MarbleList: case MarbleObject: case MarbleDictionary:
+            case MarbleString: case MarbleList: case MarbleDictionary:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -82,7 +82,7 @@ public class MarbleList : MarbleData {
                 }
                 return new MarbleList(sub_lists);
             }
-            case MarbleString: case MarbleList: case MarbleObject: case MarbleDictionary:
+            case MarbleString: case MarbleList: case MarbleDictionary:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -109,7 +109,7 @@ public class MarbleList : MarbleData {
                 return equals(data.ToStatic(position), position);
             case MarbleList:
                 break;
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleObject: case MarbleString: case MarbleDictionary:
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -120,7 +120,7 @@ public class MarbleList : MarbleData {
                 return not_equals(data.ToStatic(position), position);
             case MarbleList:
                 break;
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleObject: case MarbleString: case MarbleDictionary:
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -141,7 +141,7 @@ public class MarbleList : MarbleData {
         switch (operand) {
             case MarbleVariant data:
                 return contains(data.ToStatic(position), position);
-            case MarbleString: case MarbleBoolean:case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary: case MarbleObject:
+            case MarbleString: case MarbleBoolean:case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
                 return new MarbleBoolean(Elements.Any(delegate (MarbleData element) {
                     return element.get_data() == operand.get_data();
                 }));

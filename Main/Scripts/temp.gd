@@ -1231,7 +1231,7 @@ func InterpreteDataVertex(vertex:DataVertex, StorageObject:Storage) -> Interpret
 					return InterpreterOutput.Wrap_data(MarbleData.new(DataToken.DATATYPE.STRING, Identifier.Value[result.Value]))
 				_:
 					breakpoint
-		DataToken.DATATYPE.IDENTIFIER:
+		DataToken.DATATYPE.WORD:
 			if StorageObject.has_variable(vertex.Data):
 				var MarbleDataObject:MarbleData = StorageObject.get_variable(vertex.Data)
 				if MarbleDataObject.Type != DataToken.DATATYPE.VARIANT and MarbleDataObject.Value == null:
@@ -1283,7 +1283,7 @@ func Binary_operation(vertex:BinaryOperatorVertex, operation:Callable, StorageOb
 
 func Assign_operation(vertex:BinaryOperatorVertex, StorageObject:Storage, operation = null) -> InterpreterOutput:
 	if vertex.Left is DataVertex:
-		if not vertex.Left.Data_type in [DataToken.DATATYPE.SELECTOR, DataToken.DATATYPE.IDENTIFIER]:
+		if not vertex.Left.Data_type in [DataToken.DATATYPE.SELECTOR, DataToken.DATATYPE.WORD]:
 			Error.new(Error.TYPE.UNEXPECTED_TOKEN, vertex.Left.Position)
 	
 	var Left:InterpreterOutput = await InterpreteVertex(vertex.Left, StorageObject)
@@ -1344,7 +1344,7 @@ func InterpreteBinaryVertex(vertex:BinaryOperatorVertex, StorageObject:Storage) 
 									return interpreter_output
 								Left.Output.Value.append(interpreter_output.Output.duplicate())
 								Result = Left.Output
-					elif vertex.Right.DataType == DataToken.DATATYPE.IDENTIFIER:
+					elif vertex.Right.DataType == DataToken.DATATYPE.WORD:
 						pass
 					else:
 						pass
@@ -1524,7 +1524,7 @@ func InterpreteUnaryVertex(vertex:UnaryOperatorVertex, StorageObject:Storage) ->
 					return InterpreterOutput.Wrap_data(StorageObject.create_variable(vertex.Operand.Data, MarbleData.new(vertex.Operator.TokenValue)))
 			'Return':
 				if StorageObject.has_variable('Return'):
-					return await Assign_operation(BinaryOperatorVertex.new(DataVertex.new(DataToken.DATATYPE.IDENTIFIER, null, 'Return'), OperatorToken.new(), vertex.Operand), StorageObject)
+					return await Assign_operation(BinaryOperatorVertex.new(DataVertex.new(DataToken.DATATYPE.WORD, null, 'Return'), OperatorToken.new(), vertex.Operand), StorageObject)
 				else:
 					return InterpreterOutput.Wrap_error(Error.new(Error.TYPE.MESSAGE, vertex.Operator.Position, 'You can only do this in a function'))
 	print(vertex)
@@ -1533,7 +1533,7 @@ func InterpreteUnaryVertex(vertex:UnaryOperatorVertex, StorageObject:Storage) ->
 
 func InterpreteKeywordVertex(vertex:KeywordVertex, _StorageObject:Storage) -> InterpreterOutput:
 	match vertex.Keyword_type:
-		KeywordToken.KEYWORD.MODIFIER:
+		KeywordToken.KEYWORD.DEFINITION_SETTING:
 			breakpoint
 		KeywordToken.KEYWORD.DATATYPE:
 			breakpoint

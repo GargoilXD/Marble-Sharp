@@ -7,8 +7,6 @@ public class SymbolToken : Token {
         RIGHT_SQUARE_BRACKET,
         LEFT_CIRCLE_BRACKET,
         RIGHT_CIRCLE_BRACKET,
-        LEFT_TUPLE_BRACKET,
-        RIGHT_TUPLE_BRACKET,
         END_OF_LINE,
         END
     }

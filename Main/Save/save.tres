@@ -4,6 +4,8 @@
 
 [resource]
 script = ExtResource("1_vny5t")
-Stop_at = 1
-Code = "integer x = 0
-"
+Stop_at = 2
+Code = "constant integer X = - 5
+variant Y = 3
+Y = - 4
+Print(Y)"

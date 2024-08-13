@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public class MarbleDictionary : MarbleData {
     public Dictionary<object, MarbleData> dictionary;
-    public MarbleDictionary(Dictionary<object, MarbleData> dictionary, bool initialized = true) : base(initialized) {
+    public MarbleDictionary(Dictionary<object, MarbleData> dictionary) {
         this.dictionary = dictionary;
     }
     public override MarbleDictionary Duplicate() {
@@ -27,8 +27,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -50,8 +48,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -70,8 +66,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -92,8 +86,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -112,8 +104,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -134,8 +124,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -154,8 +142,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -176,8 +162,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -196,8 +180,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -218,8 +200,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -238,8 +218,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -260,8 +238,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -280,8 +256,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -302,8 +276,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -322,8 +294,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;
@@ -344,8 +314,6 @@ public class MarbleDictionary : MarbleData {
                 break;
             case MarbleString:
                 break;
-            case MarbleObject:
-                break;
             case MarbleVariant:
                 break;
             case MarbleList:
@@ -364,8 +332,6 @@ public class MarbleDictionary : MarbleData {
             case MarbleFloat:
                 break;
             case MarbleString:
-                break;
-            case MarbleObject:
                 break;
             case MarbleVariant:
                 break;

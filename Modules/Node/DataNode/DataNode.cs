@@ -2,16 +2,16 @@ using System.Collections.Generic;
 
 public class DataNode : Node {
     public enum TYPE {
+        NULL,
         BOOLEAN,
         INTEGER,
         FLOAT,
         STRING,
-        OBJECT,
-        VARIANT,
         IDENTIFIER,
+        /********/
         LIST,
-        TUPLE,
-        DICTIONARY
+        DICTIONARY,
+        DATATYPE
     }
     public TYPE Type {private set; get;}
     public object Data {private set; get;}

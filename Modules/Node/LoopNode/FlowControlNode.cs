@@ -6,6 +6,6 @@ public class FlowControlNode : Node {
         Data = data;
     }
     public override string ToString() {
-        return $"({Type}: {Data})";
+        return $"({Type} {Data})";
     }
 }

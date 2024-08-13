@@ -1,8 +1,4 @@
-public abstract class MarbleData : InterpreterOutput{
-    public bool Initialized = false;
-    public MarbleData(bool initialized = true) {
-        Initialized = initialized;
-    }
+public abstract class MarbleData : InterpreterOutput {
     public abstract MarbleData Duplicate();
     public static MarbleData FromDataNode(DataNode data_node) {
         switch (data_node.Type) {

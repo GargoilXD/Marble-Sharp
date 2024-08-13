@@ -1,9 +1,7 @@
-
 using System.Collections.Generic;
-
 public class MarbleVariant : MarbleData {
     public object Value;
-    public MarbleVariant(object value, bool initialized = true) : base(initialized) {
+    public MarbleVariant(object value) {
         Value = value;
     }
     public override MarbleVariant Duplicate() {

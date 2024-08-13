@@ -1,6 +1,6 @@
 public class KeywordToken : Token {
     public enum TYPE {
-        MODIFIER,
+        DEFINITION_SETTING,
         DATATYPE,
         FLOWCONTROL,
         DECISION,
@@ -9,11 +9,10 @@ public class KeywordToken : Token {
         INBUILT_FUNCTION
     }
     public enum KEYWORD {
-        CONST,
+        CONSTANT,
         STATIC,
         PUBLIC,
         PRIVATE,
-        SELF,
         VARIANT,
         BOOLEAN,
         INTEGER,
@@ -21,8 +20,6 @@ public class KeywordToken : Token {
         STRING,
         LIST,
         DICTIONARY,
-        ENUMERATION,
-        OBJECT,
         BREAK,
         CONTINUE,
         RETURN,

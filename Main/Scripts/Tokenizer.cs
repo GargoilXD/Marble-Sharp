@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 public class Tokenizer {
     public static readonly Dictionary<string, List<string>> KEYWORD_CLASSIFICATIONS = new Dictionary<string, List<string>> {
-        {"MODIFIER", new List<string> { "const", "static", "public", "private"}},
-        {"DATA", new List<string> { "true", "false", "null", "self" }},
-        {"DATATYPE", new List<string> { "variant", "boolean", "integer", "float", "string", "list", "dictionary", "enumeration", "object" }},
+        {"LOOP", new List<string> { "for", "while" }},
+        {"DATA", new List<string> { "true", "false", "null" }},
+        {"DEFINITION", new List<string> { "class", "function", "structure" }},
         {"OPERATOR", new List<string> { "not", "and", "or", "in", "is", "extends" }},
         {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
+        {"DEFINITION_SETTING", new List<string> { "constant", "static", "public", "private"}},
         {"DECISION", new List<string> { "if", "else", "elseif", "match", "case", "default" }},
-        {"LOOP", new List<string> { "for", "while" }},
-        {"DEFINITION", new List<string> { "class", "function", "structure" }},
         {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "Range", "Random", "Input" }},
+        {"DATATYPE", new List<string> { "variant", "boolean", "integer", "float", "string", "list", "dictionary"}},
     };
     public static readonly List<char> LETTERS = new List<char> { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '_' };
     public static readonly List<char> NUMBERS = new List<char> { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
@@ -117,15 +117,14 @@ public class Tokenizer {
             NextCharacter();
         }
         return data switch {
-            "const" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.CONST, Positioner.End(Index, Line)),
-            "static" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.STATIC, Positioner.End(Index, Line)),
-            "public" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PUBLIC, Positioner.End(Index, Line)),
-            "private" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PRIVATE, Positioner.End(Index, Line)),
+            "constant" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.CONSTANT, Positioner.End(Index, Line)),
+            "static" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.STATIC, Positioner.End(Index, Line)),
+            "public" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.PUBLIC, Positioner.End(Index, Line)),
+            "private" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.PRIVATE, Positioner.End(Index, Line)),
             
             "true" => new DataToken(DataToken.TYPE.BOOLEAN, true, Positioner.End(Index, Line)),
             "false" => new DataToken(DataToken.TYPE.BOOLEAN, false, Positioner.End(Index, Line)),
-            "null" => new DataToken(DataToken.TYPE.VARIANT, null, Positioner.End(Index, Line)),
-            "self" => new DataToken(DataToken.TYPE.OBJECT, KeywordToken.KEYWORD.SELF, Positioner.End(Index, Line)),
+            "null" => new DataToken(DataToken.TYPE.NULL, null, Positioner.End(Index, Line)),
             
             "variant" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.VARIANT, Positioner.End(Index, Line)),
             "boolean" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.BOOLEAN, Positioner.End(Index, Line)),
@@ -134,8 +133,6 @@ public class Tokenizer {
             "string" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.STRING, Positioner.End(Index, Line)),
             "list" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.LIST, Positioner.End(Index, Line)),
             "dictionary" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.DICTIONARY, Positioner.End(Index, Line)),
-            "enumeration" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.ENUMERATION, Positioner.End(Index, Line)),
-            "object" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.OBJECT, Positioner.End(Index, Line)),
             
             "not" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.End(Index, Line)),
             "and" => new OperatorToken(OperatorToken.OPERATOR.ADD, Positioner.End(Index, Line)),
@@ -169,7 +166,7 @@ public class Tokenizer {
             "Random" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.RANDOM, Positioner.End(Index, Line)),
             "Input" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.INPUT, Positioner.End(Index, Line)),
             
-            _ => new DataToken(DataToken.TYPE.IDENTIFIER, data, Positioner.End(Index, Line))
+            _ => new DataToken(DataToken.TYPE.WORD, data, Positioner.End(Index, Line))
         };
     }
     private DataToken MakeStringToken() {
@@ -226,9 +223,6 @@ public class Tokenizer {
             "/=" => new OperatorToken(OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN, Positioner.End(Index, Line)),
             "^=" => new OperatorToken(OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN, Positioner.End(Index, Line)),
             "%=" => new OperatorToken(OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN, Positioner.End(Index, Line)),
-            
-            "<<" => new SymbolToken(SymbolToken.SYMBOL.LEFT_TUPLE_BRACKET, Positioner.End(Index, Line)),
-            ">>" => new SymbolToken(SymbolToken.SYMBOL.RIGHT_TUPLE_BRACKET, Positioner.End(Index, Line)),
             _ => throw new TokenizerError(TokenizerError.TYPE.UNIDENTIFIED_OPERATOR, Positioner.End(Index, Line), $"'{data}'")
         };
     }

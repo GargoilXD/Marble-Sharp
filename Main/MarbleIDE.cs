@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 
 public partial class MarbleIDE : Control {
@@ -31,6 +32,14 @@ public partial class MarbleIDE : Control {
             (RichTextLabel) GetNode("%ParserOutput"),
             (RichTextLabel) GetNode("%InterpreterOutput")
         };
+        Parser_object.OnNewDatatype = delegate (string new_datatype) {
+            (Editor.SyntaxHighlighter as CodeHighlighter).AddKeywordColor(new_datatype, Color.FromString("LIGHT_GREEN", Color.Color8(0,0,0)));
+        };
+        Parser_object.ClearDatatypes = delegate (List<string> datatypes) {
+            foreach (string datatype in datatypes) {
+                (Editor.SyntaxHighlighter as CodeHighlighter).RemoveKeywordColor(datatype);
+            }
+        };
         Input_dialog = (InputGetter) GetNode("%InputDialog");
         Interpreter.Input_dialog = Input_dialog;
         Editor.Text = Save_data.Code;
@@ -58,7 +67,7 @@ public partial class MarbleIDE : Control {
         Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
         Highlighter.FunctionColor = Color.FromString("CORNFLOWER_BLUE", Color.Color8(0, 0, 0));
         Highlighter.MemberVariableColor = Color.FromString("LIGHT_BLUE", Color.Color8(0, 0, 0));
-        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["MODIFIER"]) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DEFINITION_SETTING"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CRIMSON", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DATA"]) {
@@ -71,10 +80,10 @@ public partial class MarbleIDE : Control {
             Highlighter.KeywordColors[keyword] = Color.FromString("FIREBRICK", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["FLOW_CONTROL"]) {
-            Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
+            Highlighter.KeywordColors[keyword] = Color.FromString("YELLOW", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DECISION"]) {
-            Highlighter.KeywordColors[keyword] = Color.FromString("YELLOW", Color.Color8(0, 0, 0));
+            Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["LOOP"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
@@ -122,7 +131,9 @@ public partial class MarbleIDE : Control {
                 Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
                 return;
             }
-            await Interpreter_object.Interprete(nodes, new InterpreterStorage());
+            InterpreterStorage storage = new InterpreterStorage();
+            await Interpreter_object.Interprete(nodes, storage);
+            Console.WriteLine(storage);
             Display_data(DISPLAY.INTERPRETER, Interpreter_object.Output);
             Interpreter_object.Output = "";
             if (Stop_at == DISPLAY.INTERPRETER){

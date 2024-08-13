@@ -1,12 +1,11 @@
 public class DataToken : Token {
     public enum TYPE {
+        NULL,
         BOOLEAN,
         INTEGER,
         FLOAT,
         STRING,
-        OBJECT,
-        VARIANT,
-        IDENTIFIER
+        WORD
     }
     public TYPE Type {private set; get;}
     public object Data {private set; get;}
@@ -16,7 +15,7 @@ public class DataToken : Token {
     }
     public override string ToString() {
         if (Type == TYPE.STRING) return $"({Type}, '{Data}')";
-        if (Type == TYPE.VARIANT) return $"({Type}, 'null')";
+        if (Type == TYPE.NULL) return $"({Type}, 'null')";
         return $"({Type}, {Data.ToString().ReplaceLineEndings("; ")})";
     }
 }
