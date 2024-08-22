@@ -1,0 +1,22 @@
+(((((((((A.B) ^ C) is D) % E) * F) + G) in H) == I) and J)
+<constant <static <integer <X>>> = <1 + 1>
+<public <static <integer <add(integer a, integer b)>>> {return a + b}
+add(1, 2)
+
+a * b + a * b
+public enumeration Operator {
+	ADD,
+	SUB
+}
+public class Animal {
+	public integer Age
+}
+
+public class Cat extends Animal {
+	public string Name
+}
+private Operator op = Operator
+
+
+
+

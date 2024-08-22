@@ -14,6 +14,8 @@ public class InterpreterError : Error {
         UNINITIALIZED_IDENTIFIER,
         ASSERTION_FAILED,
         MESSAGE,
+        ACCESSING_PRIVATE_VARIABLE,
+        ACCESSING_PRIVATE_FUNCTION,
     }
     public TYPE Type {private set; get; }
     public InterpreterError(TYPE type, TokenPosition position, string message = "") : base(position, message) {

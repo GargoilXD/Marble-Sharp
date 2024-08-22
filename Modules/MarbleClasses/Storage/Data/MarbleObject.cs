@@ -1,40 +1,28 @@
-public class MarbleBoolean : MarbleData {
-    public bool Value;
-    public MarbleBoolean(bool value) {
-        Value = value;
+using System.Collections.Generic;
+public class MarbleObject : MarbleData {
+    public StorageClass Class;
+    public MarbleObject(StorageClass Class) {
+        this.Class = Class;
     }
-    public override MarbleBoolean Duplicate() {
-        return new MarbleBoolean(Value);
+    public override MarbleObject Duplicate() {
+        return new MarbleObject(Class);
     }
     public override string ToString() {
-        return Value.ToString();
+        return "";
     }
     public override void set_data(object data) {
-        Value = (bool) data;
+        
     }
     public override object get_data() {
-        return Value;
+        return Class;
     }
-    public static MarbleBoolean Convert(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleBoolean data:
-                return new MarbleBoolean(data.Value);
-            case MarbleInteger data:
-                return new MarbleBoolean(data.Value > 0);
-            case MarbleFloat data:
-                return new MarbleBoolean(data.Value > 0);
-            case MarbleString data: {
-                if (bool.TryParse(data.Value, out bool value)) return new MarbleBoolean(value);
-                break;
-            }
-            case MarbleList: case MarbleDictionary:
-                break;
-        }
+    public static MarbleObject Convert(MarbleData operand, TokenPosition position) {
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    public override MarbleBoolean convert(MarbleData operand, TokenPosition position) {
+    public override MarbleObject convert(MarbleData operand, TokenPosition position) {
         return Convert(operand, position);
     }
+
     public override MarbleData add(MarbleData operand, TokenPosition position) {
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
@@ -57,39 +45,15 @@ public class MarbleBoolean : MarbleData {
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleData bitwise_and(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleBoolean:
-                return new MarbleBoolean(Value & Convert(operand, position).Value);
-            case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleList: case MarbleDictionary:
-                break;
-        }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleData bitwise_or(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleBoolean:
-                return new MarbleBoolean(Value | Convert(operand, position).Value);
-            case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleList: case MarbleDictionary:
-                break;
-        }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleBoolean equals(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleBoolean:
-                return new MarbleBoolean(Value == Convert(operand, position).Value);
-            case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleList: case MarbleDictionary:
-                break;
-        }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleBoolean not_equals(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleBoolean:
-                return new MarbleBoolean(Value != Convert(operand, position).Value);
-            case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleList: case MarbleDictionary:
-                break;
-        }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleBoolean greater_than(MarbleData operand, TokenPosition position) {
@@ -105,15 +69,9 @@ public class MarbleBoolean : MarbleData {
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleBoolean contains(MarbleData operand, TokenPosition position) {
-        switch (operand) {
-            case MarbleList: case MarbleDictionary: case MarbleString:
-                return operand.contains(this, position);
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat:
-                break;
-        }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleData negate(TokenPosition position) {
-        return new MarbleBoolean(!Value);
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
 }

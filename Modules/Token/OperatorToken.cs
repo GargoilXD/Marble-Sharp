@@ -2,6 +2,9 @@ public class OperatorToken : Token {
     public enum OPERATOR {
         DOT,
         ACCESSOR,
+        CALLER,
+        DEFINE,
+        EXECUTE,
         NOT,
         ADD,
         SUBTRACT,

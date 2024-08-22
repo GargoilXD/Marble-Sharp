@@ -32,8 +32,6 @@ public class MarbleString : MarbleData {
     }
     public override MarbleData multiply(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return multiply(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat:
                 string new_string = "";
                 for (int x = 0; x < MarbleInteger.Convert(operand, position).Value; x++) new_string += Value;
@@ -45,8 +43,6 @@ public class MarbleString : MarbleData {
     }
     public override MarbleData divide(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return divide(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat: {
                 List<MarbleData> sub_strings = new List<MarbleData>();
                 string sub_string = "";
@@ -83,8 +79,6 @@ public class MarbleString : MarbleData {
     }
     public override MarbleBoolean equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return equals(data.ToStatic(position), position);
             case MarbleString:
                 return new MarbleBoolean(Value == Convert(operand).Value);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
@@ -94,8 +88,6 @@ public class MarbleString : MarbleData {
     }
     public override MarbleBoolean not_equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return not_equals(data.ToStatic(position), position);
             case MarbleString:
                 return new MarbleBoolean(Value != Convert(operand).Value);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
@@ -117,8 +109,6 @@ public class MarbleString : MarbleData {
     }
     public override MarbleBoolean contains(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return contains(data.ToStatic(position), position);
             case MarbleString: case MarbleBoolean: case MarbleInteger: case MarbleFloat:
                 return new MarbleBoolean(Value.Contains(Convert(operand).Value));
             case MarbleList: case MarbleDictionary:

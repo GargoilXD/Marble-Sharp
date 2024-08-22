@@ -67,7 +67,7 @@ public partial class MarbleIDE : Control {
         Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
         Highlighter.FunctionColor = Color.FromString("CORNFLOWER_BLUE", Color.Color8(0, 0, 0));
         Highlighter.MemberVariableColor = Color.FromString("LIGHT_BLUE", Color.Color8(0, 0, 0));
-        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DEFINITION_SETTING"]) {
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["MODIFIER"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CRIMSON", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DATA"]) {
@@ -113,6 +113,9 @@ public partial class MarbleIDE : Control {
                 Displays[(int) Stop_at].Newline();
             }
         }
+        if (@event.IsActionPressed("ShowTabs")) {
+                Stage_tabs.TabsVisible = !Stage_tabs.TabsVisible;
+        }
     }
 
     public async void Run() {
@@ -131,7 +134,7 @@ public partial class MarbleIDE : Control {
                 Stage_tabs.CurrentTab = (int) DISPLAY.PARSER;
                 return;
             }
-            InterpreterStorage storage = new InterpreterStorage();
+            ContextualStorage storage = new ContextualStorage();
             await Interpreter_object.Interprete(nodes, storage);
             Console.WriteLine(storage);
             Display_data(DISPLAY.INTERPRETER, Interpreter_object.Output);

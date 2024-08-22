@@ -1,29 +1,40 @@
-public struct StorageVariable {
-    public enum ACCESS_MODE {
-        PRIVATE,
-        PUBLIC
-    }
-    public enum DATATYPE {
-        VARIANT,
-        BOOLEAN,
-        INTEGER,
-        FLOAT,
-        STRING,
-        LIST,
-        DICTIONARY,
-        USER_DEFINED
-    }
-    public ACCESS_MODE AccessMode;
+using System.Collections.Generic;
+public class StorageVariable : StorageEntity {
     public bool IsConstant;
-    public bool IsStatic;
-    public DATATYPE Datatype;
     public MarbleData Data;
-    public StorageVariable(ACCESS_MODE access_mode, bool is_constant, bool is_static, DATATYPE datatype, MarbleData data) {
+    public StorageVariable(ACCESS_MODE access_mode, bool is_static, DATATYPE datatype, bool is_constant, MarbleData data) : base(access_mode, is_static, datatype) {
         IsConstant = is_constant;
-        IsStatic = is_static;
-        AccessMode = access_mode;
-        Datatype = datatype;
         Data = data;
+    }
+    public StorageVariable Duplicate() {
+        return new StorageVariable(AccessMode, IsStatic, Datatype, IsConstant, Data.Duplicate());
+    }
+    public void Initialize() {
+        switch (Datatype) {
+            case DATATYPE.VARIANT:
+                Data = new MarbleBoolean(false);
+                break;
+            case DATATYPE.BOOLEAN:
+                Data = new MarbleBoolean(false);
+                break;
+            case DATATYPE.INTEGER:
+                Data = new MarbleInteger(0);
+                break;
+            case DATATYPE.FLOAT:
+                Data = new MarbleFloat(0);
+                break;
+            case DATATYPE.STRING:
+                Data = new MarbleString("");
+                break;
+            case DATATYPE.LIST:
+                Data = new MarbleList(new List<MarbleData>());
+                break;
+            case DATATYPE.DICTIONARY:
+                Data = new MarbleDictionary(new Dictionary<object, MarbleData>());
+                break;
+            default:
+                break;
+        }
     }
     public override string ToString() {
         return $"Access mode: {AccessMode}, Constant: {IsConstant}, Static: {IsStatic}, Datatype: {Datatype}, Data: {Data}";

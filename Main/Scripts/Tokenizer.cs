@@ -3,13 +3,13 @@ public class Tokenizer {
     public static readonly Dictionary<string, List<string>> KEYWORD_CLASSIFICATIONS = new Dictionary<string, List<string>> {
         {"LOOP", new List<string> { "for", "while" }},
         {"DATA", new List<string> { "true", "false", "null" }},
-        {"DEFINITION", new List<string> { "class", "function", "structure" }},
+        {"DEFINITION", new List<string> { "class", "structure", "enumeration" }},
         {"OPERATOR", new List<string> { "not", "and", "or", "in", "is", "extends" }},
         {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
-        {"DEFINITION_SETTING", new List<string> { "constant", "static", "public", "private"}},
+        {"MODIFIER", new List<string> { "constant", "static", "public", "private"}},
         {"DECISION", new List<string> { "if", "else", "elseif", "match", "case", "default" }},
         {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "Range", "Random", "Input" }},
-        {"DATATYPE", new List<string> { "variant", "boolean", "integer", "float", "string", "list", "dictionary"}},
+        {"DATATYPE", new List<string> { "void", "variant", "boolean", "integer", "float", "string", "list", "dictionary"}},
     };
     public static readonly List<char> LETTERS = new List<char> { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '_' };
     public static readonly List<char> NUMBERS = new List<char> { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
@@ -117,15 +117,16 @@ public class Tokenizer {
             NextCharacter();
         }
         return data switch {
-            "constant" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.CONSTANT, Positioner.End(Index, Line)),
-            "static" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.STATIC, Positioner.End(Index, Line)),
-            "public" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.PUBLIC, Positioner.End(Index, Line)),
-            "private" => new KeywordToken(KeywordToken.TYPE.DEFINITION_SETTING, KeywordToken.KEYWORD.PRIVATE, Positioner.End(Index, Line)),
+            "constant" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.CONSTANT, Positioner.End(Index, Line)),
+            "static" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.STATIC, Positioner.End(Index, Line)),
+            "public" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PUBLIC, Positioner.End(Index, Line)),
+            "private" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PRIVATE, Positioner.End(Index, Line)),
             
             "true" => new DataToken(DataToken.TYPE.BOOLEAN, true, Positioner.End(Index, Line)),
             "false" => new DataToken(DataToken.TYPE.BOOLEAN, false, Positioner.End(Index, Line)),
             "null" => new DataToken(DataToken.TYPE.NULL, null, Positioner.End(Index, Line)),
             
+            "void" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.VOID, Positioner.End(Index, Line)),
             "variant" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.VARIANT, Positioner.End(Index, Line)),
             "boolean" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.BOOLEAN, Positioner.End(Index, Line)),
             "integer" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.INTEGER, Positioner.End(Index, Line)),
@@ -135,7 +136,7 @@ public class Tokenizer {
             "dictionary" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.DICTIONARY, Positioner.End(Index, Line)),
             
             "not" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.End(Index, Line)),
-            "and" => new OperatorToken(OperatorToken.OPERATOR.ADD, Positioner.End(Index, Line)),
+            "and" => new OperatorToken(OperatorToken.OPERATOR.AND, Positioner.End(Index, Line)),
             "or" => new OperatorToken(OperatorToken.OPERATOR.OR, Positioner.End(Index, Line)),
             "in" => new OperatorToken(OperatorToken.OPERATOR.IN, Positioner.End(Index, Line)),
             "is" => new OperatorToken(OperatorToken.OPERATOR.IS, Positioner.End(Index, Line)),
@@ -157,8 +158,8 @@ public class Tokenizer {
             "while" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.WHILE, Positioner.End(Index, Line)),
             
             "class" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CLASS, Positioner.End(Index, Line)),
-            "function" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.FUNCTION, Positioner.End(Index, Line)),
             "structure" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.STRUCTURE, Positioner.End(Index, Line)),
+            "enumeration" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.ENUMERATION, Positioner.End(Index, Line)),
             
             "Assert" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.ASSERT, Positioner.End(Index, Line)),
             "Print" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.PRINT, Positioner.End(Index, Line)),

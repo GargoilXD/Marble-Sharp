@@ -143,21 +143,32 @@ text = "Clear"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 2
+tabs_visible = false
 
 [node name="Tokenizer" type="Panel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="TokenizerOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Tokenizer"]
-unique_name_in_owner = true
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Tokenizer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 0
+
+[node name="TokenizerOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Tokenizer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/normal_font_size = 10
+text = "dsadasdasdasdad"
 scroll_following = true
 context_menu_enabled = true
 selection_enabled = true
@@ -166,14 +177,21 @@ selection_enabled = true
 visible = false
 layout_mode = 2
 
-[node name="ParserOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Parser"]
-unique_name_in_owner = true
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Parser"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 0
+
+[node name="ParserOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Parser/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/normal_font_size = 10
 scroll_following = true
@@ -181,17 +199,23 @@ context_menu_enabled = true
 selection_enabled = true
 
 [node name="Interpreter" type="Panel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs"]
-visible = false
 layout_mode = 2
 
-[node name="InterpreterOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Interpreter"]
-unique_name_in_owner = true
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Interpreter"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 0
+
+[node name="InterpreterOutput" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/VSplitContainer/VBoxContainer/StageTabs/Interpreter/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/normal_font_size = 10
 scroll_following = true

@@ -5,7 +5,13 @@
 [resource]
 script = ExtResource("1_vny5t")
 Stop_at = 2
-Code = "constant integer X = - 5
-variant Y = 3
-Y = - 4
-Print(Y)"
+Code = "public class Person {
+	public string Name = \"Kobby\"
+	public void speak(string sentence) {
+		Print(Name + \": \" + sentence)
+	}
+}
+Person PersonObject = Person()
+PersonObject.Name = \"Mary\"
+PersonObject.speak(\"I'm alive!!\")
+"

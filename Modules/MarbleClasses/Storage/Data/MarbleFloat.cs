@@ -19,8 +19,6 @@ public class MarbleFloat : MarbleData {
     }
     public static MarbleFloat Convert(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return Convert(data.ToStatic(position), position);
             case MarbleBoolean data:
                 return new MarbleFloat(data.Value? 1 : 0);
             case MarbleInteger data:
@@ -41,8 +39,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData add(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return add(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat: 
                 return new MarbleFloat(Value + Convert(operand, position).Value);
             case MarbleString data:
@@ -59,8 +55,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData subtract(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return subtract(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat: case MarbleString:
                 return new MarbleFloat(Value - Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -70,8 +64,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData multiply(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return multiply(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat:
                 return new MarbleFloat(Value * Convert(operand, position).Value);
             case MarbleString: case MarbleList:
@@ -83,8 +75,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData divide(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return divide(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat:
                 float dividend = Convert(operand, position).Value;
                 if (dividend == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
@@ -98,8 +88,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleInteger integer_divide(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return integer_divide(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 int dividend = MarbleInteger.Convert(operand, position).Value;
                 if (dividend == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
@@ -111,8 +99,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData exponent(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return exponent(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleFloat((float) Math.Pow(Value, Convert(operand, position).Value));
             case MarbleList: case MarbleDictionary:
@@ -122,8 +108,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleData modolus(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return modolus(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleFloat(Value % Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -139,8 +123,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return equals(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value == Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -150,8 +132,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean not_equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return not_equals(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value != Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -161,8 +141,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean greater_than(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return greater_than(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value > Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -172,8 +150,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean greater_than_or_equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return greater_than_or_equals(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value >= Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -183,8 +159,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean lesser_than(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return lesser_than(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value < Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -194,8 +168,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean lesser_than_or_equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return lesser_than_or_equals(data.ToStatic(position), position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
                 return new MarbleBoolean(Value <= Convert(operand, position).Value);
             case MarbleList: case MarbleDictionary:
@@ -205,8 +177,6 @@ public class MarbleFloat : MarbleData {
     }
     public override MarbleBoolean contains(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return contains(data.ToStatic(position), position);
             case MarbleList: case MarbleDictionary: case MarbleString:
                 return operand.contains(this, position);
             case MarbleBoolean: case MarbleInteger: case MarbleFloat:

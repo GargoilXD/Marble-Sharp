@@ -1,22 +1,18 @@
-#Up next: Match, Class definition, Modifiers, Tuple, Breakpoint, Structure, extends
-tuple stuff = <<1,2,3>>
-breakpoint
-match (X) {
-	case (1, 3, 4) {
-		Print(X)
+
+const integer x = 1 + 2
+const integer y = if (x == 1) 4 else 5
+match (y) {
+	case (1) {
+		Print(x)
+	}
+	case (2) {
+		Print(x)
 	}
 	default {
-		Print("LOL")
+		Print('x')
 	}
 }
-class Dog extends Animal {
-	public string Name
-	public string Age
+public static integer add(integer a, integer b) {
+	return a + b
 }
-structure LinkedList extends List {
-	public variant Value
-	public LinkedList Next
-	private integer index
-}
-
 

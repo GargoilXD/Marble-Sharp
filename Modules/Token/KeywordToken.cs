@@ -1,6 +1,6 @@
 public class KeywordToken : Token {
     public enum TYPE {
-        DEFINITION_SETTING,
+        MODIFIER,
         DATATYPE,
         FLOWCONTROL,
         DECISION,
@@ -13,6 +13,7 @@ public class KeywordToken : Token {
         STATIC,
         PUBLIC,
         PRIVATE,
+        VOID,
         VARIANT,
         BOOLEAN,
         INTEGER,
@@ -33,8 +34,8 @@ public class KeywordToken : Token {
         FOR,
         WHILE,
         CLASS,
-        FUNCTION,
         STRUCTURE,
+        ENUMERATION,
         ASSERT,
         PRINT,
         RANGE,

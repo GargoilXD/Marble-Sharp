@@ -11,7 +11,8 @@ public class DataNode : Node {
         /********/
         LIST,
         DICTIONARY,
-        DATATYPE
+        DATATYPE,
+        INBUILT_FUNCTION
     }
     public TYPE Type {private set; get;}
     public object Data {private set; get;}

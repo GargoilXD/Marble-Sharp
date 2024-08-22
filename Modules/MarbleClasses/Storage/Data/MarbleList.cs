@@ -25,8 +25,6 @@ public class MarbleList : MarbleData {
     }
     public static MarbleList Convert(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return Convert(data.ToStatic(position), position);
             case MarbleString data: {
                 List<MarbleData> new_list = new List<MarbleData>();
                 foreach (char item in data.Value) {
@@ -34,7 +32,9 @@ public class MarbleList : MarbleData {
                 }
                 return new MarbleList(new_list);
             }
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
+            case MarbleList data:
+                return new MarbleList(data.Duplicate().Elements);
+            case MarbleDictionary: case MarbleBoolean: case MarbleInteger: case MarbleFloat:
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
@@ -54,8 +54,6 @@ public class MarbleList : MarbleData {
     }
     public override MarbleData multiply(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return multiply(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat:
                 List<MarbleData> new_list = new List<MarbleData>();
                 for (int x = 0; x < MarbleInteger.Convert(operand, position).Value; x++) new_list.AddRange(Duplicate().Elements);
@@ -67,8 +65,6 @@ public class MarbleList : MarbleData {
     }
     public override MarbleData divide(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return divide(data.ToStatic(position), position);
             case MarbleInteger: case MarbleBoolean: case MarbleFloat: {
                 List<MarbleData> sub_lists = new List<MarbleData>();
                 MarbleList sub_list = new MarbleList(new List<MarbleData>());
@@ -105,8 +101,6 @@ public class MarbleList : MarbleData {
     }
     public override MarbleBoolean equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return equals(data.ToStatic(position), position);
             case MarbleList:
                 break;
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
@@ -116,8 +110,6 @@ public class MarbleList : MarbleData {
     }
     public override MarbleBoolean not_equals(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return not_equals(data.ToStatic(position), position);
             case MarbleList:
                 break;
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
@@ -139,8 +131,6 @@ public class MarbleList : MarbleData {
     }
     public override MarbleBoolean contains(MarbleData operand, TokenPosition position) {
         switch (operand) {
-            case MarbleVariant data:
-                return contains(data.ToStatic(position), position);
             case MarbleString: case MarbleBoolean:case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
                 return new MarbleBoolean(Elements.Any(delegate (MarbleData element) {
                     return element.get_data() == operand.get_data();
