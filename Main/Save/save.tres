@@ -4,14 +4,5 @@
 
 [resource]
 script = ExtResource("1_vny5t")
-Stop_at = 2
-Code = "public class Person {
-	public string Name = \"Kobby\"
-	public void speak(string sentence) {
-		Print(Name + \": \" + sentence)
-	}
-}
-Person PersonObject = Person()
-PersonObject.Name = \"Mary\"
-PersonObject.speak(\"I'm alive!!\")
-"
+Stop_at = 1
+Code = "Apple A = 9"

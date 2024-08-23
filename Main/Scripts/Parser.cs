@@ -60,8 +60,9 @@ public class Parser {
         switch (CurrentToken) {
             case DataToken data_token:
                 next_token();
-                if (data_token.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains(data_token.Data)) return new DataNode(DataNode.TYPE.DATATYPE, data_token.Data, data_token.Position);
-                else return DataNode.FromToken(data_token);
+                //if (data_token.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains(data_token.Data)) return new DataNode(DataNode.TYPE.DATATYPE, data_token.Data, data_token.Position);
+                //else
+                return DataNode.FromToken(data_token);
             case SymbolToken symbol_token:
                 switch (symbol_token.Symbol) {
                     case SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET:
@@ -123,7 +124,7 @@ public class Parser {
                     case KeywordToken.TYPE.DATATYPE: {
                         next_token();
                         if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-                        if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
+                        //if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
                         Node identifier = get_operand_node();
                         if (CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, out SymbolToken symbol_token)) {
                             identifier = new BinaryOperatorNode(identifier, new OperatorToken(OperatorToken.OPERATOR.CALLER, CurrentToken.Position), new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", () => get_statement(false)), symbol_token.Position + PreviousToken.Position));
@@ -136,7 +137,7 @@ public class Parser {
                     case KeywordToken.TYPE.DEFINITION: {
                         next_token();
                         if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-                        if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
+                        //if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
                         AddNewDataType(CurrentToken as DataToken);
                         Node identifier = get_binary_node(get_operand_node, new [] {OperatorToken.OPERATOR.EXTENDS}, get_operand_node);
                         switch (keyword_token.Keyword) {
@@ -153,11 +154,11 @@ public class Parser {
             case DataToken data_token:
                 switch (data_token.Type) {
                     case DataToken.TYPE.WORD:
-                        if (data_token.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains(data_token.Data)) {
+                        //if (data_token.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains(data_token.Data)) {
                             next_token();
                             return new UnaryOperatorNode(data_token, get_operand_node());
-                        }
-                        break;
+                        //}
+                        //break;
                 }
                 break;
         }
