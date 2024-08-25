@@ -1,6 +1,6 @@
 function Make_random_sample(integer Size, integer lower, integer upper) {
 	list sample = []
-	for (integer x = 0 in Size) {
+	for (x in Size) {
 		sample.append(Random(lower, upper))
 	}
 	return sample
@@ -10,13 +10,13 @@ list Computer_numbers = Make_random_sample(5, 0, 10)
 integer Size = 5
 list Responses = []
 
-for (integer x = 0 in Size) {
+for (x in Size) {
 	Responses.append(Input('Guess a number:'))
 }
 
 integer number_matched = 0
-for (integer x = 0 in Size) {
-	for (integer y = 0 in Size) {
+for (x in Size) {
+	for (y in Size) {
 		if (Responses[x] == (Computer_numbers[y] + '')) {
 			number_matched += 1
 		}

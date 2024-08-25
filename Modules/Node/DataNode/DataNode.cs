@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-
 public class DataNode : Node {
     public enum TYPE {
         NULL,
@@ -11,8 +10,8 @@ public class DataNode : Node {
         /********/
         LIST,
         DICTIONARY,
-        DATATYPE,
-        INBUILT_FUNCTION
+        //DATATYPE,
+        //INBUILT_FUNCTION
     }
     public TYPE Type {private set; get;}
     public object Data {private set; get;}

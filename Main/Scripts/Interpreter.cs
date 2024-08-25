@@ -105,89 +105,90 @@ public class Interpreter {
                 }
                 return Left;
             }
-            case OperatorToken.OPERATOR.CALLER:
+            case OperatorToken.OPERATOR.CALLER: {
+                List<Node> Arguments = (node.Right as DataNode).Data as List<Node>;
                 switch (node.Left) {
-                    case DataNode data_node:
-                        List<Node> Arguments = (node.Right as DataNode).Data as List<Node>;
-                        switch (data_node.Type) {
-                            case DataNode.TYPE.DATATYPE:
-                                switch(data_node.Data) {
-                                    case KeywordToken.KEYWORD:
-                                        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
-                                    default:
-                                        if (!storage.HasClass(data_node.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
-                                        return new MarbleObject(storage.GetClass(data_node.Data as string));
+                    case KeywordNode keyword_node: {
+                        switch (keyword_node.Keyword) {
+                            case KeywordToken.KEYWORD.VARIANT: case KeywordToken.KEYWORD.BOOLEAN: case KeywordToken.KEYWORD.INTEGER:
+                            case KeywordToken.KEYWORD.FLOAT: case KeywordToken.KEYWORD.STRING: case KeywordToken.KEYWORD.LIST: case KeywordToken.KEYWORD.DICTIONARY:
+                                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
+                            case KeywordToken.KEYWORD.ASSERT: {
+                                if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                                MarbleData assertion = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
+                                if (assertion is not MarbleBoolean) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Expected boolean");
+                                if (!(assertion as MarbleBoolean).Value) throw new InterpreterError(InterpreterError.TYPE.ASSERTION_FAILED, node.Right.Position);
+                                return new FlowController(FlowController.TYPE.DONE);
+                            }
+                            case KeywordToken.KEYWORD.PRINT: {
+                                foreach (Node argument in Arguments) Output += $"{GetStorageVariable(await InterpreteNode(argument, storage), argument.Position)} ";
+                                Output += '\n';
+                                return new FlowController(FlowController.TYPE.DONE);
+                            }
+                            case KeywordToken.KEYWORD.RANGE: {
+                                if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                                MarbleData data = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
+                                if (data is not MarbleInteger)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Position);
+                                List<MarbleData> elements = new List<MarbleData>();
+                                for (int x = 0; x < (data as MarbleInteger).Value; x++) {
+                                    elements.Add(new MarbleInteger(x));
+                                }
+                                return new MarbleList(elements);
 
-                                }
+                            }
+                            case KeywordToken.KEYWORD.RANDOM: {
+                                if (Arguments.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                                MarbleData left = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
+                                if (left is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, Arguments[0].Position);
+                                MarbleData right = GetStorageVariable(await InterpreteNode(Arguments[1], storage), Arguments[1].Position);
+                                if (right is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, Arguments[1].Position);
+                                int random_number = new Random().Next((int) left.get_data(), (int) right.get_data());
+                                return new MarbleInteger(random_number);
+
+                            }
+                            case KeywordToken.KEYWORD.INPUT: {
+                                if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                                Input_dialog.DialogText = $"{GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position)}";
+                                Input_dialog.Show();
+                                await Input_dialog.ToSignal(Input_dialog, "confirmed");
+                                return new MarbleString(Input_dialog.Input);
+
+                            }
+                        }
+                        break;
+                    }
+                    case DataNode data_node:
+                        switch (data_node.Type) {
                             case DataNode.TYPE.IDENTIFIER:
-                                if (!storage.HasFunction(data_node.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
-                                ContextualStorage child_storage = storage.CreateChild();
-                                StorageFunction function = storage.GetFunction(data_node.Data as string);
-                                if (Arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
-                                for (int x = 0; x < function.Arguments.Count; x++) {
-                                    await assign_operation(function.Arguments[x], GetStorageVariable(await InterpreteNode(Arguments[x], storage), node.Right.Position), child_storage);
+                                if (storage.HasFunction(data_node.Data as string)) {
+                                    ContextualStorage child_storage = storage.CreateChild();
+                                    StorageFunction function = storage.GetFunction(data_node.Data as string);
+                                    if (Arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
+                                    for (int x = 0; x < function.Arguments.Count; x++) {
+                                        await assign_operation(function.Arguments[x], GetStorageVariable(await InterpreteNode(Arguments[x], storage), node.Right.Position), child_storage);
+                                    }
+                                    child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
+                                    FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
+                                    switch (output.Type) {
+                                        case FlowController.TYPE.CONTINUE: case FlowController.TYPE.BREAK:
+                                            throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Unexpected Keyword");
+                                        case FlowController.TYPE.RETURN:
+                                            return output.Data;
+                                        case FlowController.TYPE.DONE:
+                                            if (function.Datatype != StorageEntity.DATATYPE.VARIANT) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, data_node.Position, "No return statement");
+                                            return null;
+                                    }
+                                } else if (storage.HasClass(data_node.Data as string)) {
+                                    return new MarbleObject(storage.GetClass(data_node.Data as string));
                                 }
-                                child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
-                                FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
-                                switch (output.Type) {
-                                    case FlowController.TYPE.CONTINUE: case FlowController.TYPE.BREAK:
-                                        throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Unexpected Keyword");
-                                    case FlowController.TYPE.RETURN:
-                                        return output.Data;
-                                    case FlowController.TYPE.DONE:
-                                        if (function.Datatype != StorageEntity.DATATYPE.VARIANT) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, data_node.Position, "No return statement");
-                                        return null;
-                                }
-                                break;
-                            case DataNode.TYPE.INBUILT_FUNCTION:
-                                switch (data_node.Data) {
-                                    case KeywordToken.KEYWORD.ASSERT:
-                                        if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
-                                        MarbleData assertion = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
-                                        if (assertion is not MarbleBoolean) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Expected boolean");
-                                        if (!(assertion as MarbleBoolean).Value) throw new InterpreterError(InterpreterError.TYPE.ASSERTION_FAILED, node.Right.Position);
-                                        return new FlowController(FlowController.TYPE.DONE);
-                                    case KeywordToken.KEYWORD.PRINT: {
-                                        foreach (Node argument in Arguments) Output += $"{GetStorageVariable(await InterpreteNode(argument, storage), argument.Position)} ";
-                                        Output += '\n';
-                                        return new FlowController(FlowController.TYPE.DONE);
-                                    }
-                                    case KeywordToken.KEYWORD.RANGE: {
-                                        if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                                        MarbleData data = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
-                                        if (data is not MarbleInteger)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Position);
-                                        List<MarbleData> elements = new List<MarbleData>();
-                                        for (int x = 0; x < (data as MarbleInteger).Value; x++) {
-                                            elements.Add(new MarbleInteger(x));
-                                        }
-                                        return new MarbleList(elements);
-                                    }
-                                    case KeywordToken.KEYWORD.RANDOM: {
-                                        if (Arguments.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                                        MarbleData left = GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position);
-                                        if (left is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, Arguments[0].Position);
-                                        MarbleData right = GetStorageVariable(await InterpreteNode(Arguments[1], storage), Arguments[1].Position);
-                                        if (right is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, Arguments[1].Position);
-                                        int random_number = new Random().Next((int) left.get_data(), (int) right.get_data());
-                                        return new MarbleInteger(random_number);
-                                    }
-                                    case KeywordToken.KEYWORD.INPUT: {
-                                        if (Arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                                        Input_dialog.DialogText = $"{GetStorageVariable(await InterpreteNode(Arguments[0], storage), Arguments[0].Position)}";
-                                        Input_dialog.Show();
-                                        await Input_dialog.ToSignal(Input_dialog, "confirmed");
-                                        return new MarbleString(Input_dialog.Input);
-                                    }
-                                }
-                                break;
+                                throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
                         }
                         break;
                     case BinaryOperatorNode:
                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
+                }
+                return null;
             }
-            return null;
-            case OperatorToken.OPERATOR.DEFINE:
-                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Left.Position, "def");
             case OperatorToken.OPERATOR.ADD: {
                 MarbleData Left = GetStorageVariable(await InterpreteNode(node.Left, storage), node.Left.Position);
                 MarbleData Right = GetStorageVariable(await InterpreteNode(node.Right, storage), node.Right.Position);
@@ -345,7 +346,7 @@ public class Interpreter {
             case KeywordToken keyword_token:
                 switch (keyword_token.Type) {
                     case KeywordToken.TYPE.MODIFIER: {
-                        StorageEntity storage_data = await InterpreteNode(node.Operand, storage) as StorageEntity;
+                        StorageEntity storage_data = (await InterpreteNode(node.Operand, storage)).IsStorageEntity(new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Operand.Position, "Modifier"));
                         switch (keyword_token.Keyword) {
                             case KeywordToken.KEYWORD.CONSTANT:
                                 if (storage_data is not StorageVariable) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Operator.Position, "Only for variables");
@@ -514,7 +515,7 @@ public class Interpreter {
         switch (node.Type) {
             case DataNode.TYPE.BOOLEAN: case DataNode.TYPE.INTEGER: case DataNode.TYPE.FLOAT: case DataNode.TYPE.STRING:
                 return MarbleData.FromDataNode(node);
-            case DataNode.TYPE.NULL: case DataNode.TYPE.DATATYPE:
+            case DataNode.TYPE.NULL:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
             case DataNode.TYPE.DICTIONARY: {
                 Dictionary<object, MarbleData> dictionary = new Dictionary<object, MarbleData>();

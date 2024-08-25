@@ -1,18 +1,6 @@
-
-const integer x = 1 + 2
-const integer y = if (x == 1) 4 else 5
-match (y) {
-	case (1) {
-		Print(x)
-	}
-	case (2) {
-		Print(x)
-	}
-	default {
-		Print('x')
-	}
-}
-public static integer add(integer a, integer b) {
+integer x = 1 + 2
+integer add(integer a, integer b) {
 	return a + b
 }
+
 

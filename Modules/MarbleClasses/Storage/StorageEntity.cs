@@ -1,4 +1,5 @@
-public abstract class StorageEntity : InterpreterOutput {
+using System.Collections.Generic;
+public class StorageEntity : InterpreterOutput {
     public enum ACCESS_MODE {
         NONE,
         PRIVATE,
@@ -22,5 +23,8 @@ public abstract class StorageEntity : InterpreterOutput {
         IsStatic = is_static;
         AccessMode = access_mode;
         Datatype = datatype;
+    }
+    public override string ToString() {
+        return $"Access mode: {AccessMode}, Static: {IsStatic}, Datatype: {Datatype}";
     }
 }

@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-
 public partial class MarbleIDE : Control {
     public enum DISPLAY {
         TOKENIZER,
@@ -16,11 +15,9 @@ public partial class MarbleIDE : Control {
     private OptionButton Stage_option_button;
     private RichTextLabel[] Displays;
     private InputGetter Input_dialog;
-
     Tokenizer Tokenizer_object = new Tokenizer();
     Parser Parser_object = new Parser();
     Interpreter Interpreter_object = new Interpreter();
-
     public override void _Ready() {
         base._Ready();
         Save_data = (EditorSave) ResourceLoader.Load("res://Main/Save/save.tres");
@@ -31,14 +28,6 @@ public partial class MarbleIDE : Control {
             (RichTextLabel) GetNode("%TokenizerOutput"),
             (RichTextLabel) GetNode("%ParserOutput"),
             (RichTextLabel) GetNode("%InterpreterOutput")
-        };
-        Parser_object.OnNewDatatype = delegate (string new_datatype) {
-            (Editor.SyntaxHighlighter as CodeHighlighter).AddKeywordColor(new_datatype, Color.FromString("LIGHT_GREEN", Color.Color8(0,0,0)));
-        };
-        Parser_object.ClearDatatypes = delegate (List<string> datatypes) {
-            foreach (string datatype in datatypes) {
-                (Editor.SyntaxHighlighter as CodeHighlighter).RemoveKeywordColor(datatype);
-            }
         };
         Input_dialog = (InputGetter) GetNode("%InputDialog");
         Interpreter.Input_dialog = Input_dialog;
@@ -62,11 +51,12 @@ public partial class MarbleIDE : Control {
             }
         };
 
-        CodeHighlighter Highlighter = new CodeHighlighter();
-        Highlighter.NumberColor = Color.FromString("LIGHT_GREEN", Color.Color8(0,0,0));
-        Highlighter.SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0));
-        Highlighter.FunctionColor = Color.FromString("CORNFLOWER_BLUE", Color.Color8(0, 0, 0));
-        Highlighter.MemberVariableColor = Color.FromString("LIGHT_BLUE", Color.Color8(0, 0, 0));
+        CodeHighlighter Highlighter = new CodeHighlighter{
+            NumberColor = Color.FromString("LIGHT_GREEN", Color.Color8(0, 0, 0)),
+            SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0)),
+            FunctionColor = Color.FromString("CORNFLOWER_BLUE", Color.Color8(0, 0, 0)),
+            MemberVariableColor = Color.FromString("LIGHT_BLUE", Color.Color8(0, 0, 0))
+        };
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["MODIFIER"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CRIMSON", Color.Color8(0, 0, 0));
         }
@@ -96,7 +86,7 @@ public partial class MarbleIDE : Control {
         }
         Highlighter.AddColorRegion("\"", "\"", Color.FromString("GREEN_YELLOW", Color.Color8(0, 0, 0)));
         Highlighter.AddColorRegion("'", "'", Color.FromString("GREEN_YELLOW", Color.Color8(0, 0, 0)));
-        Highlighter.AddColorRegion("#", "", Color.FromString("DIM_GRAY", Color.Color8(0, 0, 0)), true);
+        Highlighter.AddColorRegion("#", "#", Color.FromString("DIM_GRAY", Color.Color8(0, 0, 0)));
         Editor.SyntaxHighlighter = Highlighter;
     }
     public override void _Input(InputEvent @event) {
@@ -117,7 +107,6 @@ public partial class MarbleIDE : Control {
                 Stage_tabs.TabsVisible = !Stage_tabs.TabsVisible;
         }
     }
-
     public async void Run() {
         Displays[0].Clear();
         Displays[1].Clear();
@@ -163,13 +152,8 @@ public partial class MarbleIDE : Control {
             }
         }
     }
-
     private void Display_data(DISPLAY display, object data) {
         Displays[(int) display].AppendText(data.ToString());
         Displays[(int) display].Newline();
-    }
-
-    private void Clear_display() {
-        
     }
 }

@@ -168,7 +168,6 @@ unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/normal_font_size = 10
-text = "dsadasdasdasdad"
 scroll_following = true
 context_menu_enabled = true
 selection_enabled = true

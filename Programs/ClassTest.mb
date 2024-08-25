@@ -1,0 +1,23 @@
+public class Human {
+	integer Age
+	string Gender
+}
+public class Person extends Human {
+	public string First_name
+	public string Last_name
+	public function Person Person(string first_name, string last_name, integer age, string gender) {
+		First_name = first_name
+		Last_name = last_name
+		Age = age
+		Gender = gender
+	}
+	public function void speak(string sentence) {
+		Print(First_name + ": " + sentence)
+	}
+	public function void give_ID() {
+		speak("My name is " + Name ", I am " + Age + ", Years old and I am a " + Gender)
+	}
+}
+Person Person_A = Person("Mary", "Underling", 19, "Femoid")
+Person_A.speak("I'm alive!!")
+Person_A.give_ID()

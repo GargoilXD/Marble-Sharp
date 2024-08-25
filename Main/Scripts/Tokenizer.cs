@@ -3,7 +3,7 @@ public class Tokenizer {
     public static readonly Dictionary<string, List<string>> KEYWORD_CLASSIFICATIONS = new Dictionary<string, List<string>> {
         {"LOOP", new List<string> { "for", "while" }},
         {"DATA", new List<string> { "true", "false", "null" }},
-        {"DEFINITION", new List<string> { "class", "structure", "enumeration" }},
+        {"DEFINITION", new List<string> { "class", "structure", "enumeration", "function", "constructor" }},
         {"OPERATOR", new List<string> { "not", "and", "or", "in", "is", "extends" }},
         {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
         {"MODIFIER", new List<string> { "constant", "static", "public", "private"}},
@@ -157,6 +157,8 @@ public class Tokenizer {
             "for" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.FOR, Positioner.End(Index, Line)),
             "while" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.WHILE, Positioner.End(Index, Line)),
             
+            "constructor" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CONSTRUCTOR, Positioner.End(Index, Line)),
+            "function" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.FUNCTION, Positioner.End(Index, Line)),
             "class" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CLASS, Positioner.End(Index, Line)),
             "structure" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.STRUCTURE, Positioner.End(Index, Line)),
             "enumeration" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.ENUMERATION, Positioner.End(Index, Line)),
@@ -229,6 +231,7 @@ public class Tokenizer {
     }
     private void IgnoreComment() {
         NextCharacter();
-        while (Character != '\n' && Character != '\0') NextCharacter();
+        while (/*Character != '\n' &&*/ Character != '\0' && Character != '#') NextCharacter();
+        if (Character == '#') NextCharacter();
     }
 }
