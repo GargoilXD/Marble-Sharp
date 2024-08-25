@@ -7,7 +7,7 @@ public class StorageVariable : StorageEntity {
         Data = data;
     }
     public StorageVariable Duplicate() {
-        return new StorageVariable(AccessMode, IsStatic, Datatype, IsConstant, Data.Duplicate());
+        return new StorageVariable(AccessMode, IsStatic, Datatype, IsConstant, Data == null? null : Data.Duplicate());
     }
     public void Initialize() {
         switch (Datatype) {

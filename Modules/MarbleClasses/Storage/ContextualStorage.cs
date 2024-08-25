@@ -16,6 +16,12 @@ public class ContextualStorage {
         Functions = new Dictionary<string, StorageFunction>();
         Classes = new Dictionary<string, StorageClass>();
     }
+	public ContextualStorage(ContextualStorage parent, Dictionary<string, StorageVariable> variables, Dictionary<string, StorageFunction> functions, Dictionary<string, StorageClass> classes) {
+        Parent = parent;
+        Variables = variables;
+        Functions = functions;
+        Classes = classes;
+    }
 	public ContextualStorage CreateChild() {
 		return new ContextualStorage(this);
     }
@@ -32,7 +38,10 @@ public class ContextualStorage {
         foreach (KeyValuePair<string, StorageClass> KV in Classes) {
             classes.Add(KV.Key, KV.Value.Duplicate());
         }
-        return new ContextualStorage(this);
+        ContextualStorage parent = null;
+        if (Parent != null) parent = Parent.Duplicate();
+        ContextualStorage storage = new ContextualStorage(parent, variables, functions, classes);
+        return storage;
     }
 	public void Reset() {
 		Variables.Clear();
@@ -53,15 +62,30 @@ public class ContextualStorage {
         }
 		return has;
     }
-	public bool GetVariable(string name, out StorageVariable storage_variable) {
+    public bool GetEntity(string name, out StorageEntity storage_entity) {
 		if (Variables.ContainsKey(name)){
-            storage_variable = Variables[name];
+            storage_entity = Variables[name];
+			return true;
+        } else if (Functions.ContainsKey(name)) {
+            storage_entity = Functions[name];
+			return true;
+        } else if (Classes.ContainsKey(name)) {
+            storage_entity = Classes[name];
 			return true;
         }
 		else {
-			if (Parent != null) return Parent.GetVariable(name, out storage_variable);
-            storage_variable = null;
+			if (Parent != null) return Parent.GetEntity(name, out storage_entity);
+            storage_entity = null;
             return false;
+        }
+    }
+	public StorageVariable GetVariable(string name) {
+		if (Variables.ContainsKey(name)){
+			return Variables[name];
+        }
+		else {
+			if (Parent != null) return Parent.GetVariable(name);
+            return null;
         }
     }
     public void CreateFunction(string name, StorageFunction definition) {

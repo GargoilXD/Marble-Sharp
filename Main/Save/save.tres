@@ -4,14 +4,14 @@
 
 [resource]
 script = ExtResource("1_vny5t")
-Stop_at = 1
-Code = "public class Human {
-	integer Age
-	string Gender
+Stop_at = 2
+Code = "class Human {
+	integer Age = 9
+	string Gender = \"\"
 }
-public class Person extends Human {
-	public string First_name
-	public string Last_name
+class Person extends Human {
+	public string First_name = \"\"
+	public string Last_name = \"\"
 	public constructor(string first_name, string last_name, integer age, string gender) {
 		First_name = first_name
 		Last_name = last_name
@@ -22,7 +22,7 @@ public class Person extends Human {
 		Print(First_name + \": \" + sentence)
 	}
 	public function void give_ID() {
-		speak(\"My name is \" + Name \", I am \" + Age + \", Years old and I am a \" + Gender)
+		speak(\"My name is \" + First_name + \" \" + Last_name + \", I am \" + Age + \" Years old and I am a \" + Gender)
 	}
 }
 Person Person_A = Person(\"Mary\", \"Underling\", 19, \"Femoid\")

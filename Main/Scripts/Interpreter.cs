@@ -48,7 +48,7 @@ public class Interpreter {
                                 for (int x = 0; x < function.Arguments.Count; x++) {
                                     await assign_operation(function.Arguments[x], GetStorageVariable(await InterpreteNode(Arguments[x], storage), node.Right.Position), child_storage);
                                 }
-                                child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
+                                if (function.Datatype != StorageEntity.DATATYPE.VOID) child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
                                 FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
                                 switch (output.Type) {
                                     case FlowController.TYPE.CONTINUE: case FlowController.TYPE.BREAK:
@@ -63,9 +63,9 @@ public class Interpreter {
                                 break;
                             }
                             case DataNode data: {
-                                if (!mobject.Class.Storage.GetVariable(data.Data as string, out StorageVariable variable)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data.Position);
-                                if (variable.AccessMode == StorageEntity.ACCESS_MODE.PRIVATE) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_VARIABLE, data.Position);
-                                return variable;
+                                if (!mobject.Class.Storage.GetEntity(data.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data.Position);
+                                if (storage_entity.AccessMode == StorageEntity.ACCESS_MODE.PRIVATE) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_VARIABLE, data.Position);
+                                return storage_entity;
                             }
 
                         }
@@ -167,7 +167,7 @@ public class Interpreter {
                                     for (int x = 0; x < function.Arguments.Count; x++) {
                                         await assign_operation(function.Arguments[x], GetStorageVariable(await InterpreteNode(Arguments[x], storage), node.Right.Position), child_storage);
                                     }
-                                    child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
+                                    if (function.Datatype != StorageEntity.DATATYPE.VOID) child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESS_MODE.PRIVATE, false, function.Datatype, false, null));
                                     FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
                                     switch (output.Type) {
                                         case FlowController.TYPE.CONTINUE: case FlowController.TYPE.BREAK:
@@ -175,11 +175,19 @@ public class Interpreter {
                                         case FlowController.TYPE.RETURN:
                                             return output.Data;
                                         case FlowController.TYPE.DONE:
-                                            if (function.Datatype != StorageEntity.DATATYPE.VARIANT) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, data_node.Position, "No return statement");
+                                            if (function.Datatype != StorageEntity.DATATYPE.VOID) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, data_node.Position, "No return statement");
                                             return null;
                                     }
                                 } else if (storage.HasClass(data_node.Data as string)) {
-                                    return new MarbleObject(storage.GetClass(data_node.Data as string));
+                                    StorageClass storage_class = storage.GetClass(data_node.Data as string);
+                                    ContextualStorage child_storage = storage_class.Storage.CreateChild();
+                                    StorageFunction function = storage_class.Storage.GetFunction("Constructor!");
+                                    if (Arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
+                                    for (int x = 0; x < function.Arguments.Count; x++) {
+                                        await assign_operation(function.Arguments[x], GetStorageVariable(await InterpreteNode(Arguments[x], storage), node.Right.Position), child_storage);
+                                    }
+                                    await InterpreteInstructionListNode(function.Instructions, child_storage);
+                                    return new MarbleObject(storage_class);
                                 }
                                 throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
                         }
@@ -370,74 +378,73 @@ public class Interpreter {
                         return storage_data;
                     }
                     case KeywordToken.TYPE.DATATYPE: {
-                        switch (node.Operand) {
-                            case DataNode name: {
-                                if (storage.HasVariable(name.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
-                                StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESS_MODE.NONE, false, (StorageEntity.DATATYPE) (keyword_token.Keyword - 4), false, null);
-                                storage.CreateVariable(name.Data as string, storage_variable);
-                                return storage_variable;
-                            }
-                            case BinaryOperatorNode function: {
-                                BinaryOperatorNode identifier = function.Left as BinaryOperatorNode;
-                                string name = (identifier.Left as DataNode).Data as string;
+                        DataNode identifier = node.Operand as DataNode;
+                        if (storage.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                        StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESS_MODE.NONE, false, (StorageEntity.DATATYPE) (keyword_token.Keyword - 4), false, null);
+                        storage.CreateVariable(identifier.Data as string, storage_variable);
+                        return storage_variable;
+                    }
+                    case KeywordToken.TYPE.DEFINITION:
+                        switch (keyword_token.Keyword) {
+                            case KeywordToken.KEYWORD.FUNCTION: {
+                                BinaryOperatorNode definition = node.Operand as BinaryOperatorNode;
+                                BinaryOperatorNode function = definition.Left as BinaryOperatorNode;
+                                UnaryOperatorNode identifier = function.Left as UnaryOperatorNode;
+                                string name = (identifier.Operand as DataNode).Data as string;
                                 if (storage.HasFunction(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
-                                StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESS_MODE.NONE, false, (StorageEntity.DATATYPE) (keyword_token.Keyword - 4), (identifier.Right as DataNode).Data as List<Node>, function.Right as InstructionListNode);
+                                StorageEntity.DATATYPE datatype = identifier.Operator.is_keyword_type(KeywordToken.TYPE.DATATYPE, out KeywordToken type)? (StorageEntity.DATATYPE) (type.Keyword - 4) : StorageEntity.DATATYPE.USER_DEFINED;
+                                StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESS_MODE.NONE, false, datatype, (function.Right as DataNode).Data as List<Node>, definition.Right as InstructionListNode);
                                 storage.CreateFunction(name, storage_function);
                                 return storage_function;
                             }
-                        }
-                        break;
-                    }
-                    case KeywordToken.TYPE.DEFINITION: {
-                        DataNode parent = null;
-                        DataNode identifier = null;
-                        switch ((node.Operand as BinaryOperatorNode).Left) {
-                            case DataNode data: {
-                                identifier = data;
+                            case KeywordToken.KEYWORD.CLASS: {
+                                DataNode identifier = null;
+                                ContextualStorage Class = null;
+                                switch ((node.Operand as BinaryOperatorNode).Left) {
+                                    case DataNode data: {
+                                        identifier = data;
+                                        Class = new ContextualStorage();
+                                        break;
+                                    }
+                                    case BinaryOperatorNode bin: {
+                                        identifier = bin.Left as DataNode;
+                                        StorageEntity output = (await InterpreteNode(bin.Right, storage)).IsStorageEntity(new InterpreterError(InterpreterError.TYPE.MESSAGE, bin.Right.Position));
+                                        if (output is not StorageClass) new InterpreterError(InterpreterError.TYPE.MESSAGE, bin.Right.Position);
+                                        Class = (output as StorageClass).Storage.CreateChild();
+                                        break;
+                                    }
+                                }
+                                switch (keyword_token.Keyword) {
+                                    case KeywordToken.KEYWORD.CLASS:
+                                        string name = identifier.Data as string;
+                                        if (storage.HasClass(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                                        await InterpreteInstructionListNode((node.Operand as BinaryOperatorNode).Right as InstructionListNode, Class);
+                                        StorageClass storage_class = new StorageClass(StorageEntity.ACCESS_MODE.NONE, false, Class);
+                                        storage.CreateClass(name, storage_class);
+                                        return storage_class;
+                                    case KeywordToken.KEYWORD.STRUCTURE:
+                                    case KeywordToken.KEYWORD.ENUMERATION:
+                                        break;
+                                }
                                 break;
                             }
-                            case BinaryOperatorNode bin: {
-                                identifier = bin.Left as DataNode;
-                                parent = bin.Right as DataNode;
-                                if (!storage.HasClass(parent.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, parent.Position);
-                                break;
+                            case KeywordToken.KEYWORD.CONSTRUCTOR: {
+                                BinaryOperatorNode definition = node.Operand as BinaryOperatorNode;
+                                StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESS_MODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, (definition.Left as DataNode).Data as List<Node>, definition.Right as InstructionListNode);
+                                storage.CreateFunction("Constructor!", storage_function);
+                                return storage_function;
                             }
                         }
-                        switch (keyword_token.Keyword) {
-                            case KeywordToken.KEYWORD.CLASS:
-                                string name = identifier.Data as string;
-                                if (storage.HasClass(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
-                                ContextualStorage Class = new ContextualStorage();
-                                await InterpreteInstructionListNode((node.Operand as BinaryOperatorNode).Right as InstructionListNode, Class);
-                                StorageClass storage_class = new StorageClass(StorageEntity.ACCESS_MODE.NONE, false, Class);
-                                storage.CreateClass(name, storage_class);
-                                return storage_class;
-                            case KeywordToken.KEYWORD.STRUCTURE:
-                            case KeywordToken.KEYWORD.ENUMERATION:
-                                break;
-                        }
-                        break;
-                    }
+                    break;
                 }
                 break;
-            case DataToken:
-                switch (node.Operand) {
-                    case DataNode name: {
-                        if (storage.HasVariable(name.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
-                        StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESS_MODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, false, null);
-                        storage.CreateVariable(name.Data as string, storage_variable);
-                        return storage_variable;
-                    }
-                    case BinaryOperatorNode function: {
-                        BinaryOperatorNode identifier = function.Left as BinaryOperatorNode;
-                        string name = (identifier.Left as DataNode).Data as string;
-                        if (storage.HasFunction(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
-                        StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESS_MODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, (identifier.Right as DataNode).Data as List<Node>, function.Right as InstructionListNode);
-                        storage.CreateFunction(name, storage_function);
-                        return storage_function;
-                    }
-                }
-                break;
+            case DataToken: {
+                DataNode identifier = node.Operand as DataNode;
+                if (storage.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESS_MODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, false, null);
+                storage.CreateVariable(identifier.Data as string, storage_variable);
+                return storage_variable;
+            }
             default:
                 break;
         }
@@ -533,8 +540,8 @@ public class Interpreter {
                 return new MarbleList(elements);
             }
             case DataNode.TYPE.IDENTIFIER:
-                if (!storage.GetVariable(node.Data as string, out StorageVariable storage_variable)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, node.Position);
-                return storage_variable;
+                if (!storage.GetEntity(node.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, node.Position);
+                return storage_entity;
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
@@ -544,7 +551,8 @@ public class Interpreter {
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
             case FlowController.TYPE.RETURN:
                 MarbleData data = GetStorageVariable(await InterpreteNode(node.Data, storage), node.Data.Position);
-                if (!storage.GetVariable("RETURN!", out StorageVariable storage_variable)) throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, node.Position);
+                if (!storage.GetEntity("RETURN!", out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, node.Position);
+                StorageVariable storage_variable = storage_entity as StorageVariable;
                 switch (storage_variable.Datatype) {
                     case StorageEntity.DATATYPE.VARIANT:
                         storage_variable.Data = data;

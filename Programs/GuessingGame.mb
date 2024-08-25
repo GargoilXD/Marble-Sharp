@@ -1,4 +1,4 @@
-function Make_random_sample(integer Size, integer lower, integer upper) {
+function list Make_random_sample(integer Size, integer lower, integer upper) {
 	list sample = []
 	for (x in Size) {
 		sample.append(Random(lower, upper))

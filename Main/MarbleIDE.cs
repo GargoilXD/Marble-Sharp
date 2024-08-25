@@ -29,6 +29,14 @@ public partial class MarbleIDE : Control {
             (RichTextLabel) GetNode("%ParserOutput"),
             (RichTextLabel) GetNode("%InterpreterOutput")
         };
+        Parser_object.OnNewDatatype = delegate (string new_datatype) {
+            (Editor.SyntaxHighlighter as CodeHighlighter).AddKeywordColor(new_datatype, Color.FromString("BROWN", Color.Color8(0,0,0)));
+        };
+        Parser_object.ClearDatatypes = delegate (List<string> datatypes) {
+            foreach (string datatype in datatypes) {
+                (Editor.SyntaxHighlighter as CodeHighlighter).RemoveKeywordColor(datatype);
+            }
+        };
         Input_dialog = (InputGetter) GetNode("%InputDialog");
         Interpreter.Input_dialog = Input_dialog;
         Editor.Text = Save_data.Code;
@@ -67,7 +75,7 @@ public partial class MarbleIDE : Control {
             Highlighter.KeywordColors[keyword] = Color.FromString("FIREBRICK", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["OPERATOR"]) {
-            Highlighter.KeywordColors[keyword] = Color.FromString("FIREBRICK", Color.Color8(0, 0, 0));
+            Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["FLOW_CONTROL"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("YELLOW", Color.Color8(0, 0, 0));
