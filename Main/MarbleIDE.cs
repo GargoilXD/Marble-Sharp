@@ -133,7 +133,7 @@ public partial class MarbleIDE : Control {
             }
             ContextualStorage storage = new ContextualStorage();
             await Interpreter_object.Interprete(nodes, storage);
-            Console.WriteLine(storage);
+            //Console.WriteLine(storage);
             Display_data(DISPLAY.INTERPRETER, Interpreter_object.Output);
             Interpreter_object.Output = "";
             if (Stop_at == DISPLAY.INTERPRETER){

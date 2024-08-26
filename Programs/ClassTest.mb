@@ -1,10 +1,14 @@
 class Human {
-	integer Age = 9
-	string Gender = ""
+	public integer Age
+	public string Gender
+	public constructor(integer age, string gender) {
+		Age = age
+		Gender = gender
+	}
 }
 class Person extends Human {
-	public string First_name = ""
-	public string Last_name = ""
+	public string First_name
+	public string Last_name
 	public constructor(string first_name, string last_name, integer age, string gender) {
 		First_name = first_name
 		Last_name = last_name
@@ -21,3 +25,6 @@ class Person extends Human {
 Person Person_A = Person("Mary", "Underling", 19, "Femoid")
 Person_A.speak("I'm alive!!")
 Person_A.give_ID()
+Person Person_B = Person("Kweku", "Ananse", 500, "Spider")
+Person_B.speak("I'm alive!!")
+Person_B.give_ID()
