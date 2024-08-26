@@ -6,7 +6,10 @@ public class StorageFunction : StorageEntity {
         Arguments = arguments;
         Instructions = instructions;
     }
-    public StorageFunction Duplicate() {
+    public override object GetData() {
+        return null;
+    } 
+    public override StorageFunction Duplicate() {
         return new StorageFunction(AccessMode, IsStatic, Datatype, Arguments, Instructions);
     }
     public override string ToString() {

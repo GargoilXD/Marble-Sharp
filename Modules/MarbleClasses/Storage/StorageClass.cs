@@ -3,7 +3,10 @@ public class StorageClass : StorageEntity {
     public StorageClass(ACCESS_MODE access_mode, bool is_static, ContextualStorage storage) : base(access_mode, is_static, DATATYPE.USER_DEFINED) {
         Storage = storage;
     }
-    public StorageClass Duplicate() {
+    public override object GetData() {
+        return Storage;
+    } 
+    public override StorageClass Duplicate() {
         return new StorageClass(AccessMode, IsStatic, Storage.Duplicate());
     }
     public override string ToString() {

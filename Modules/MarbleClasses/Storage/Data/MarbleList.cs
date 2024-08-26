@@ -133,7 +133,7 @@ public class MarbleList : MarbleData {
         switch (operand) {
             case MarbleString: case MarbleBoolean:case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
                 return new MarbleBoolean(Elements.Any(delegate (MarbleData element) {
-                    return element.get_data() == operand.get_data();
+                    return element.equals(operand, position).Value;
                 }));
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);

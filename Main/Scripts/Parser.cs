@@ -11,8 +11,7 @@ public class Parser {
         new[] { OperatorToken.OPERATOR.MULTIPLY, OperatorToken.OPERATOR.DIVIDE, OperatorToken.OPERATOR.INTEGER_DIVIDE },
         new[] { OperatorToken.OPERATOR.MODOLUS },
         new[] { OperatorToken.OPERATOR.EXPONENT },
-        new[] { OperatorToken.OPERATOR.IS },
-        new[] { OperatorToken.OPERATOR.DOT }
+        new[] { OperatorToken.OPERATOR.IS }
     };
     private struct STRUCTURES {
         public static byte VARIABLE = 1;
@@ -21,7 +20,8 @@ public class Parser {
         public static byte CONSTRUCTOR = 8;
         public static byte STATEMENT = 16;
         public static byte FLOW_CONTROL = 32;
-        public static byte MODIFIER  = 64;
+        public static byte MODIFIER = 64;
+        public static byte RETURN_STATEMENT = 128;
         public static bool IN(int structure, int container) {
             return (structure & container) != 0;
         }
@@ -71,6 +71,13 @@ public class Parser {
     private Node get_bracket_operation(Node node) { 
         while (true) {
             switch (CurrentToken) {
+                case OperatorToken operator_token:
+                    if (operator_token.Type != OperatorToken.OPERATOR.DOT) return node;
+                    next_token();
+                    if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
+                    if (NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
+                    return new BinaryOperatorNode(node, operator_token, get_bracket_operation(get_operand_node()));
+
                 case SymbolToken symbol_token:
                     switch (symbol_token.Symbol) {
                         case SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET: {
@@ -83,9 +90,6 @@ public class Parser {
                         }
                         case SymbolToken.SYMBOL.LEFT_CURLY_BRACKET:
                             return node;
-                            //break;
-                        //    node = new BinaryOperatorNode(node, new OperatorToken(OperatorToken.OPERATOR.DEFINES, CurrentToken.Position), get_instruction_list_node());
-                        //    break;
                         default:
                             return node;
                     }
@@ -109,8 +113,15 @@ public class Parser {
             case KeywordToken keyword_token:
                 switch (keyword_token.Type) {
                     case KeywordToken.TYPE.MODIFIER: case KeywordToken.TYPE.FLOWCONTROL:
-                    case KeywordToken.TYPE.LOOP: case KeywordToken.TYPE.DEFINITION:
+                    case KeywordToken.TYPE.LOOP:
                         throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position);
+                    case KeywordToken.TYPE.DEFINITION:
+                        switch (keyword_token.Keyword) {
+                            case KeywordToken.KEYWORD.FUNCTION:
+                                throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, keyword_token.Position);
+                            default:
+                                throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position);
+                        }
                     case KeywordToken.TYPE.DECISION:
                         switch (keyword_token.Keyword) {
                             case KeywordToken.KEYWORD.ELSE_IF: case KeywordToken.KEYWORD.ELSE:
@@ -232,13 +243,10 @@ public class Parser {
                         throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position, "Expected modifier, datatype, class, function or identifier");
                 }
             case DataToken data_token:
-                if (data_token.Type != DataToken.TYPE.WORD) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, data_token.Position, "Expected Identifier");
-                if (NewDatatypes.Contains(data_token.Data as string)) {
-                    if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                    return get_variable_structure();
-                }
-                next_token();
-                return DataNode.FromToken(data_token);
+                if (data_token.Type != DataToken.TYPE.WORD) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, data_token.Position, "Expected Datatype");
+                if (!NewDatatypes.Contains(data_token.Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, data_token.Position, "Expected Datatype");
+                if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                return get_variable_structure();
             default:
                 throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected modifier, datatype, class, function or identifier");
         }
@@ -280,7 +288,7 @@ public class Parser {
         Node identifier = new UnaryOperatorNode(datatype, DataNode.FromToken(data_token));
         next_token();
         DataNode arguments = new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_variable_structure, out TokenPosition position), position);
-        InstructionListNode instruction = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT);
+        InstructionListNode instruction = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.RETURN_STATEMENT + STRUCTURES.STATEMENT);
         Node function = new BinaryOperatorNode(identifier, new OperatorToken(OperatorToken.OPERATOR.CALLER, identifier.Position), arguments);
         Node definition = new BinaryOperatorNode(function, new OperatorToken(OperatorToken.OPERATOR.DEFINES, identifier.Position), instruction);
         return new UnaryOperatorNode(keyword_token, definition);
@@ -368,21 +376,24 @@ public class Parser {
                             break;
                         }
                         case KeywordToken.TYPE.FLOWCONTROL: {
-                            if (!STRUCTURES.IN(STRUCTURES.FLOW_CONTROL, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                             switch (keyword_token.Keyword) {
                                 case KeywordToken.KEYWORD.RETURN:
+                                    if (!STRUCTURES.IN(STRUCTURES.RETURN_STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                     next_token();
                                     nodes.Add(new FlowControlNode(get_expression(), keyword_token.Position + PreviousToken.Position));
                                     break;
                                 case KeywordToken.KEYWORD.BREAK:
+                                    if (!STRUCTURES.IN(STRUCTURES.FLOW_CONTROL, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                     next_token();
                                     nodes.Add(new FlowControlNode(FlowController.TYPE.BREAK, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 case KeywordToken.KEYWORD.CONTINUE:
+                                    if (!STRUCTURES.IN(STRUCTURES.FLOW_CONTROL, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                     next_token();
                                     nodes.Add(new FlowControlNode(FlowController.TYPE.CONTINUE, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 case KeywordToken.KEYWORD.BREAKPOINT:
+                                    if (!STRUCTURES.IN(STRUCTURES.FLOW_CONTROL, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                     next_token();
                                     nodes.Add(new FlowControlNode(FlowController.TYPE.BREAKPOINT, keyword_token.Position + PreviousToken.Position));
                                     break;
@@ -398,7 +409,9 @@ public class Parser {
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     next_token();
                                     if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-                                    Node iterator = get_operand_node();
+                                    if (NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
+                                    DataNode iterator = DataNode.FromToken(CurrentToken as DataToken);
+                                    next_token();
                                     if (!CurrentToken.is_operator(OperatorToken.OPERATOR.IN))  throw new ParserError(ParserError.TYPE.EXPECTED_OPERATOR, CurrentToken.Position, "'in'");
                                     OperatorToken In = CurrentToken as OperatorToken;
                                     next_token();

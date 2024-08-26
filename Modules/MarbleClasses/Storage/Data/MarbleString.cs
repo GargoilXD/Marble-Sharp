@@ -84,6 +84,7 @@ public class MarbleString : MarbleData {
             case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleList: case MarbleDictionary:
                 break;
         }
+        return new MarbleBoolean(false);
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     public override MarbleBoolean not_equals(MarbleData operand, TokenPosition position) {

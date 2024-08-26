@@ -48,6 +48,9 @@ public partial class MarbleIDE : Control {
             Stage_tabs.CurrentTab = (int) index;
         };
         GetNode<Button>("%Run").Pressed += delegate {
+            Displays[0].Clear();
+            Displays[1].Clear();
+            Displays[2].Clear();
             if (Editor.Text != "") {
                 EditorCode = Editor.Text;
                 Run();
@@ -58,7 +61,6 @@ public partial class MarbleIDE : Control {
                 display.Clear();
             }
         };
-
         CodeHighlighter Highlighter = new CodeHighlighter{
             NumberColor = Color.FromString("LIGHT_GREEN", Color.Color8(0, 0, 0)),
             SymbolColor = Color.FromString("AQUA", Color.Color8(0, 0, 0)),
@@ -116,8 +118,6 @@ public partial class MarbleIDE : Control {
         }
     }
     public async void Run() {
-        Displays[0].Clear();
-        Displays[1].Clear();
         try {
             List<Token> tokens = Tokenizer_object.Tokenize();
             Display_data(DISPLAY.TOKENIZER, string.Join(", ", tokens).Replace("(END_OF_LINE), ", "\n"));

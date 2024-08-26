@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_vny5t")
-Stop_at = 1
-Code = "#class Number {
-
+Stop_at = 2
+Code = "class Number {
+	public static integer value = 5
 }
-#
-integer A = 0"
+Print(Number.value)
+"
