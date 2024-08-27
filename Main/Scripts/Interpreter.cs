@@ -71,8 +71,16 @@ public class Interpreter {
                         DataNode identifier = function.Left as DataNode;
                         List<Node> arguments = (function.Right as DataNode).Data as List<Node>;
                         switch (data) {
-                            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary:
+                            case MarbleBoolean: case MarbleInteger: case MarbleFloat:  case MarbleDictionary:
                                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
+                            case MarbleString marble_string:
+                                switch (identifier.Data as string) {
+                                    case "has":
+                                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        return marble_string.contains((await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position), arguments[0].Position);
+                                    default:
+                                        throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                                }
                             case MarbleList list: {
                                 switch (identifier.Data as string) {
                                     case "append":
@@ -153,7 +161,27 @@ public class Interpreter {
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.PRINT: {
-                        foreach (Node argument in arguments) Output += $"{(await InterpreteNode(argument, storage)).ToMarbleData(argument.Position)} ";
+                        foreach (Node argument in arguments) {
+                            MarbleData data = (await InterpreteNode(argument, storage)).ToMarbleData(argument.Position);
+                            if (data is MarbleObject) {
+                                if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                                    Output += $"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (data as MarbleObject).Class.Storage.CreateChild())}";
+                                }
+                            }
+                            else Output += $"{data} ";
+                        }
+                        return new FlowController(FlowController.TYPE.DONE);
+                    }
+                    case KeywordToken.KEYWORD.PRINTLINE: {
+                        foreach (Node argument in arguments) {
+                            MarbleData data = (await InterpreteNode(argument, storage)).ToMarbleData(argument.Position);
+                            if (data is MarbleObject) {
+                                if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                                    Output += $"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (data as MarbleObject).Class.Storage.CreateChild())}";
+                                }
+                            }
+                            else Output += $"{data} ";
+                        }
                         Output += '\n';
                         return new FlowController(FlowController.TYPE.DONE);
                     }
@@ -220,15 +248,24 @@ public class Interpreter {
         MarbleData Left = (await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position);
         MarbleList Right = (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position) as MarbleList;
         switch (Left) {
-            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: case MarbleDictionary: case MarbleObject:
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleDictionary: case MarbleObject:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
-            case MarbleList list:
+            case MarbleString marble_string: {
+                if (Right.Elements.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                MarbleData index = Right.Elements[0];
+                if (index is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
+                int value = (int) index.get_data();
+                if (value >= marble_string.Value.Length) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
+                return new MarbleString(marble_string.Value[value] + "");
+            }
+            case MarbleList list: {
                 if (Right.Elements.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
                 MarbleData index = Right.Elements[0];
                 if (index is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
                 int value = (int) index.get_data();
                 if (value >= list.Elements.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
                 return list.Elements[value];
+            }
             default:
                 return null;
         }

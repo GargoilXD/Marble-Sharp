@@ -8,7 +8,7 @@ public class Tokenizer {
         {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
         {"MODIFIER", new List<string> { "constant", "static", "public", "private"}},
         {"DECISION", new List<string> { "if", "else", "elseif", "match", "case", "default" }},
-        {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "Range", "Random", "Input" }},
+        {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "PrintLine", "Range", "Random", "Input" }},
         {"DATATYPE", new List<string> { "void", "variant", "boolean", "integer", "float", "string", "list", "dictionary"}},
     };
     public static readonly List<char> LETTERS = new List<char> { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '_' };
@@ -165,6 +165,7 @@ public class Tokenizer {
             
             "Assert" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.ASSERT, Positioner.End(Index, Line)),
             "Print" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.PRINT, Positioner.End(Index, Line)),
+            "PrintLine" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.PRINTLINE, Positioner.End(Index, Line)),
             "Range" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.RANGE, Positioner.End(Index, Line)),
             "Random" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.RANDOM, Positioner.End(Index, Line)),
             "Input" => new KeywordToken(KeywordToken.TYPE.INBUILT_FUNCTION, KeywordToken.KEYWORD.INPUT, Positioner.End(Index, Line)),

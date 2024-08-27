@@ -1,17 +1,10 @@
-[gd_resource type="Resource" load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://Main/Save/EditorSave.cs" id="1_vny5t"]
-
-[resource]
-script = ExtResource("1_vny5t")
-Stop_at = 2
-Code = "class NumberToken {
+class NumberToken {
 	public integer value
 	constructor(integer number) {
 		value = number
 	}
 	function string to_string() {
-		return \"(\" + value + \"), \"
+		return "(" + value + "), "
 	}
 }
 class OperatorToken {
@@ -20,16 +13,16 @@ class OperatorToken {
 		value = operator
 	}
 	function string to_string() {
-		return \"(\" + value + \"), \"
+		return "(" + value + "), "
 	}
 }
 function void NextCharacter() {
 	Index += 1
-	Character = if (Index < String.size) String[Index] else \"End\"
+	Character = if (Index < String.size) String[Index] else "End"
 }
 
 function NumberToken MakeNumberToken() {
-	string data = \"\"
+	string data = ""
 	while (NUMBERS.has(Character)) {
 		data += Character
 		NextCharacter()
@@ -39,21 +32,21 @@ function NumberToken MakeNumberToken() {
 function OperatorToken MakeOperatorToken() {
 	string operator = Character
 	NextCharacter()
-	if (operator == \"+\") {
-		return OperatorToken(\"ADD\")
-	} elseif (operator == \"-\") {
-		return OperatorToken(\"SUBTRACT\")
-	} elseif (operator == \"*\") {
-		return OperatorToken(\"MULTIPLY\")
-	} elseif (operator == \"/\") {
-		return OperatorToken(\"DIVIDE\")
+	if (operator == "+") {
+		return OperatorToken("ADD")
+	} elseif (operator == "-") {
+		return OperatorToken("SUBTRACT")
+	} elseif (operator == "*") {
+		return OperatorToken("MULTIPLY")
+	} elseif (operator == "/") {
+		return OperatorToken("DIVIDE")
 	}
 }
 function void Run() {
-	String = Input(\"Enter the data:\")
+	String = Input("Enter the data:")
 	NextCharacter()
-	while (Character != \"End\") {
-		if (Character == \" \") {
+	while (Character != "End") {
+		if (Character == " ") {
 			NextCharacter()
 		}
 		elseif (NUMBERS.has(Character)) {
@@ -62,7 +55,7 @@ function void Run() {
 			Tokens.append(MakeOperatorToken())
 			
 		} else {
-			PrintLine(\"Invalid Input\")
+			PrintLine("Invalid Input")
 			break
 		}
 	}
@@ -70,11 +63,10 @@ function void Run() {
 		Print(token)
 	}
 }
-string NUMBERS = \"1234567890\"
-string OPERATORS = \"+-*/\"
+string NUMBERS = "1234567890"
+string OPERATORS = "+-*/"
 string String
 string Character
 integer Index = -1
 list Tokens = []
 Run()
-"

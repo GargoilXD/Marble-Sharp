@@ -118,7 +118,7 @@ public class ContextualStorage {
         bool has = Classes.ContainsKey(name);
 		if (!has) {
 			if (Parent != null) {
-				has = Parent.HasFunction(name);
+				has = Parent.HasClass(name);
             }
         }
 		return has;

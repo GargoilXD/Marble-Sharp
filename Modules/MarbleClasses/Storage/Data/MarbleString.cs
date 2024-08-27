@@ -10,7 +10,7 @@ public class MarbleString : MarbleData {
         return new MarbleString(Value);
     }
     public override string ToString() {
-        return Value.ToString();
+        return Value;
     }
     public override void set_data(object data) {
         Value = (string) data;

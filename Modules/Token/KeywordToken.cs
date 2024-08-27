@@ -40,6 +40,7 @@ public class KeywordToken : Token {
         ENUMERATION,
         ASSERT,
         PRINT,
+        PRINTLINE,
         RANGE,
         RANDOM,
         INPUT
