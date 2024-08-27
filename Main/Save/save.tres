@@ -50,7 +50,6 @@ function OperatorToken MakeOperatorToken() {
 	}
 }
 function void Run() {
-	String = Input(\"Enter the data:\")
 	NextCharacter()
 	while (Character != \"End\") {
 		if (Character == \" \") {
@@ -70,9 +69,9 @@ function void Run() {
 }
 string NUMBERS = \"1234567890\"
 string OPERATORS = \"+-*/\"
-string String
 string Character
 integer Index = -1
 list Tokens = []
+string String = \"2 * 3 + 5\"
 Run()
 "
