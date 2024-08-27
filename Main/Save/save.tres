@@ -11,7 +11,7 @@ Code = "class NumberToken {
 		value = number
 	}
 	function string to_string() {
-		return \"(\" + value + \"), \"
+		return \"(\" + value + \")\"
 	}
 }
 class OperatorToken {
@@ -20,7 +20,7 @@ class OperatorToken {
 		value = operator
 	}
 	function string to_string() {
-		return \"(\" + value + \"), \"
+		return \"(\" + value + \")\"
 	}
 }
 function void NextCharacter() {
@@ -66,9 +66,7 @@ function void Run() {
 			break
 		}
 	}
-	for (token in Tokens) {
-		Print(token)
-	}
+	PrintLine(Tokens)
 }
 string NUMBERS = \"1234567890\"
 string OPERATORS = \"+-*/\"

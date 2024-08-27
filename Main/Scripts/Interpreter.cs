@@ -145,6 +145,7 @@ public class Interpreter {
                 return null;
         }
     }
+    
     private async Task<InterpreterOutput> CallerOperation(BinaryOperatorNode node, ContextualStorage storage) {
         List<Node> arguments = (node.Right as DataNode).Data as List<Node>;
         switch (node.Left) {
@@ -168,6 +169,17 @@ public class Interpreter {
                                     Output += $"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (data as MarbleObject).Class.Storage.CreateChild())}";
                                 }
                             }
+                            else if (data is MarbleList) {
+                                foreach (MarbleData element in (data as MarbleList).Elements) {
+                                    if (element is MarbleObject) {
+                                        if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                                            Output += $"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (data as MarbleObject).Class.Storage.CreateChild())}";
+                                        }
+                                    } else {
+                                        Output += $"{data}";
+                                    }
+                                }
+                            }
                             else Output += $"{data} ";
                         }
                         return new FlowController(FlowController.TYPE.DONE);
@@ -178,6 +190,18 @@ public class Interpreter {
                             if (data is MarbleObject) {
                                 if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
                                     Output += $"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (data as MarbleObject).Class.Storage.CreateChild())}";
+                                }
+                                
+                            }
+                            else if (data is MarbleList) {
+                                foreach (MarbleData element in (data as MarbleList).Elements) {
+                                    if (element is MarbleObject) {
+                                        if ((element as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                                            Output += $"{await RunFunction((element as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), node, storage, (element as MarbleObject).Class.Storage.CreateChild())}, ";
+                                        }
+                                    } else {
+                                        Output += $"{data}, ";
+                                    }
                                 }
                             }
                             else Output += $"{data} ";
@@ -290,7 +314,14 @@ public class Interpreter {
                 storage_variable.Data = MarbleFloat.Convert(data, left.Position);
                 break;
             case StorageEntity.DATATYPE.STRING:
-                storage_variable.Data = MarbleString.Convert(data);
+                if (data is MarbleObject) {
+                    if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                        storage_variable.Data = new MarbleString($"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), null, storage, (data as MarbleObject).Class.Storage.CreateChild())}");
+                    }
+                    storage_variable.Data = new MarbleString("Object");
+                } else {
+                    storage_variable.Data = MarbleString.Convert(data);
+                }
                 break;
             case StorageEntity.DATATYPE.LIST:
                 storage_variable.Data = MarbleList.Convert(data, left.Position);
@@ -614,7 +645,14 @@ public class Interpreter {
                         storage_variable.Data = MarbleFloat.Convert(data, node.Position);
                         break;
                     case StorageEntity.DATATYPE.STRING:
-                        storage_variable.Data = MarbleString.Convert(data);
+                        if (data is MarbleObject) {
+                            if ((data as MarbleObject).Class.Storage.HasFunction("to_string")) {
+                                storage_variable.Data = new MarbleString($"{await RunFunction((data as MarbleObject).Class.Storage.GetFunction("to_string"), new List<Node>(), null, storage, (data as MarbleObject).Class.Storage.CreateChild())}");
+                            }
+                            storage_variable.Data = new MarbleString("Object");
+                        } else {
+                            storage_variable.Data = MarbleString.Convert(data);
+                        }
                         break;
                     case StorageEntity.DATATYPE.LIST:
                         storage_variable.Data = MarbleList.Convert(data, node.Position);
