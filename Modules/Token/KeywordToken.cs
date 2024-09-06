@@ -6,13 +6,17 @@ public class KeywordToken : Token {
         DECISION,
         LOOP,
         DEFINITION,
-        INBUILT_FUNCTION
+        INBUILT_FUNCTION,
+        EXCEPTION_HANDLING
     }
     public enum KEYWORD {
         CONSTANT,
         STATIC,
         PUBLIC,
         PRIVATE,
+        CLASSIFIED,
+        UNLIMITED,
+        REFERENCE,
         VOID,
         VARIANT,
         BOOLEAN,
@@ -21,6 +25,8 @@ public class KeywordToken : Token {
         STRING,
         LIST,
         DICTIONARY,
+        CALLABLE,
+        OBJECT,
         BREAK,
         CONTINUE,
         RETURN,
@@ -36,6 +42,7 @@ public class KeywordToken : Token {
         FUNCTION,
         CLASS,
         STRUCTURE,
+        VARIABLE,
         CONSTRUCTOR,
         ENUMERATION,
         ASSERT,
@@ -43,7 +50,9 @@ public class KeywordToken : Token {
         PRINTLINE,
         RANGE,
         RANDOM,
-        INPUT
+        INPUT,
+        TRY,
+        CATCH
     };
     public TYPE Type {private set; get;}
     public KEYWORD Keyword {private set; get;}

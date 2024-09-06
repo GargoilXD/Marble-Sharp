@@ -239,7 +239,7 @@ public class OldParser {
         }
         return get_expression();
     }
-    private InstructionListNode get_instruction_list_node(int allow_expression) {
+    private OperandInstructionNode get_instruction_list_node(int allow_expression) {
         if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CURLY_BRACKET, out SymbolToken start)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '{'");
         next_token();
         while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
@@ -247,7 +247,7 @@ public class OldParser {
         if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET)) throw new ParserError(ParserError.TYPE.UNCLOSED_BRACKETS, start.Position + CurrentToken.Position, "Expected '}'");
         next_token();
         while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
-        return new InstructionListNode(instructions, start.Position + PreviousToken.Position);
+        return new OperandInstructionNode(instructions, start.Position + PreviousToken.Position);
     }
     private List<Node> get_nodes(SymbolToken.SYMBOL breaker, int allowed_structures) {
         List<Node> nodes = new List<Node>();
@@ -280,7 +280,7 @@ public class OldParser {
                                         if ((case_expression.Data as List<Node>).Count == 0) throw new ParserError(ParserError.TYPE.EMPTHY_CASE, case_token.Position);
                                         cases.Add(new MatchNode.CaseNode(case_expression, get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL), case_token.Position + PreviousToken.Position));
                                     }
-                                    InstructionListNode default_node = null;
+                                    OperandInstructionNode default_node = null;
                                     if (CurrentToken.is_keyword(KeywordToken.KEYWORD.DEFAULT)) {
                                         next_token();
                                         default_node = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT +  + STRUCTURES.FLOW_CONTROL);
@@ -294,7 +294,7 @@ public class OldParser {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     Node if_expression = get_operand_node();
-                                    InstructionListNode implication = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
+                                    OperandInstructionNode implication = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
                                     List<IFNode.ElseIFNode> children = new List<IFNode.ElseIFNode>();
                                     while (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE_IF)) {
                                         KeywordToken else_if_token = CurrentToken as KeywordToken;
@@ -302,7 +302,7 @@ public class OldParser {
                                         if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                         children.Add(new IFNode.ElseIFNode(get_operand_node(), get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL), else_if_token.Position + PreviousToken.Position));
                                     }
-                                    InstructionListNode inverse = null;
+                                    OperandInstructionNode inverse = null;
                                     if (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE)) {
                                         next_token();
                                         inverse = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
@@ -348,7 +348,7 @@ public class OldParser {
                                     Node iteratable = get_operand_node();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected ')'");
                                     next_token();
-                                    InstructionListNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
+                                    OperandInstructionNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
                                     nodes.Add(new ForNode(iterator, iteratable, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }
@@ -356,7 +356,7 @@ public class OldParser {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     Node expression = get_operand_node();
-                                    InstructionListNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
+                                    OperandInstructionNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE_DEFINITION + STRUCTURES.STATEMENT + STRUCTURES.FLOW_CONTROL);
                                     nodes.Add(new WhileNode(expression, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }

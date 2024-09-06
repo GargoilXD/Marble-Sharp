@@ -1,5 +1,4 @@
 using Godot;
-using System;
 using System.Collections.Generic;
 public partial class MarbleIDE : Control {
     public enum DISPLAY {
@@ -69,6 +68,9 @@ public partial class MarbleIDE : Control {
         };
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["MODIFIER"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("CRIMSON", Color.Color8(0, 0, 0));
+        }
+        foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["EXCEPTION_HANDLING"]) {
+            Highlighter.KeywordColors[keyword] = Color.FromString("PURPLE", Color.Color8(0, 0, 0));
         }
         foreach (string keyword in Tokenizer.KEYWORD_CLASSIFICATIONS["DATA"]) {
             Highlighter.KeywordColors[keyword] = Color.FromString("INDIAN_RED", Color.Color8(0, 0, 0));

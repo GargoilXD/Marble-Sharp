@@ -1,6 +1,7 @@
 public class SymbolToken : Token {
     public enum SYMBOL {
         COMMA,
+        COLON,
         LEFT_CURLY_BRACKET,
         RIGHT_CURLY_BRACKET,
         LEFT_SQUARE_BRACKET,

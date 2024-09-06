@@ -3,17 +3,18 @@ public class Tokenizer {
     public static readonly Dictionary<string, List<string>> KEYWORD_CLASSIFICATIONS = new Dictionary<string, List<string>> {
         {"LOOP", new List<string> { "for", "while" }},
         {"DATA", new List<string> { "true", "false", "null" }},
-        {"DEFINITION", new List<string> { "class", "structure", "enumeration", "function", "constructor" }},
+        {"EXCEPTION_HANDLING", new List<string> { "try", "catch" }},
+        {"DEFINITION", new List<string> { "class", "structure", "enumeration", "function", "constructor", "variable" }},
         {"OPERATOR", new List<string> { "not", "and", "or", "in", "is", "extends" }},
         {"FLOW_CONTROL", new List<string> { "break", "continue", "return", "breakpoint" }},
-        {"MODIFIER", new List<string> { "constant", "static", "public", "private"}},
+        {"MODIFIER", new List<string> { "constant", "static", "public", "private", "classified", "unlimited", "reference" }},
         {"DECISION", new List<string> { "if", "else", "elseif", "match", "case", "default" }},
         {"INBUILT_FUNCTION", new List<string> { "Assert", "Print", "PrintLine", "Range", "Random", "Input" }},
-        {"DATATYPE", new List<string> { "void", "variant", "boolean", "integer", "float", "string", "list", "dictionary"}},
+        {"DATATYPE", new List<string> { "void", "variant", "boolean", "integer", "float", "string", "list", "dictionary", "callable", "object" }},
     };
     public static readonly List<char> LETTERS = new List<char> { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '_' };
     public static readonly List<char> NUMBERS = new List<char> { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
-    public static readonly List<char> OPERATOR_CHARACTERS = new List<char> { '!', '+', '-', '*', '/', '^', '%', '=', '<', '>', ':', '.', '&', '|' };
+    public static readonly List<char> OPERATOR_CHARACTERS = new List<char> { '!', '+', '-', '*', '/', '^', '%', '=', '<', '>', '.', '&', '|', '$' };
     private int Index;
     private int Line;
     private char Character;
@@ -58,6 +59,10 @@ public class Tokenizer {
                         break;
                     case ',':
                         Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.COMMA, new TokenPosition(Index, Line)));
+                        NextCharacter();
+                        break;
+                    case ':':
+                        Tokens.Add(new SymbolToken(SymbolToken.SYMBOL.COLON, new TokenPosition(Index, Line)));
                         NextCharacter();
                         break;
                     case '{':
@@ -121,6 +126,12 @@ public class Tokenizer {
             "static" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.STATIC, Positioner.End(Index, Line)),
             "public" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PUBLIC, Positioner.End(Index, Line)),
             "private" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.PRIVATE, Positioner.End(Index, Line)),
+            "classified" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.CLASSIFIED, Positioner.End(Index, Line)),
+            "unlimited" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.UNLIMITED, Positioner.End(Index, Line)),
+            "reference" => new KeywordToken(KeywordToken.TYPE.MODIFIER, KeywordToken.KEYWORD.REFERENCE, Positioner.End(Index, Line)),
+            
+            "try" => new KeywordToken(KeywordToken.TYPE.EXCEPTION_HANDLING, KeywordToken.KEYWORD.TRY, Positioner.End(Index, Line)),
+            "catch" => new KeywordToken(KeywordToken.TYPE.EXCEPTION_HANDLING, KeywordToken.KEYWORD.CATCH, Positioner.End(Index, Line)),
             
             "true" => new DataToken(DataToken.TYPE.BOOLEAN, true, Positioner.End(Index, Line)),
             "false" => new DataToken(DataToken.TYPE.BOOLEAN, false, Positioner.End(Index, Line)),
@@ -134,6 +145,8 @@ public class Tokenizer {
             "string" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.STRING, Positioner.End(Index, Line)),
             "list" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.LIST, Positioner.End(Index, Line)),
             "dictionary" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.DICTIONARY, Positioner.End(Index, Line)),
+            "callable" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.CALLABLE, Positioner.End(Index, Line)),
+            "object" => new KeywordToken(KeywordToken.TYPE.DATATYPE, KeywordToken.KEYWORD.OBJECT, Positioner.End(Index, Line)),
             
             "not" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.End(Index, Line)),
             "and" => new OperatorToken(OperatorToken.OPERATOR.AND, Positioner.End(Index, Line)),
@@ -157,6 +170,7 @@ public class Tokenizer {
             "for" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.FOR, Positioner.End(Index, Line)),
             "while" => new KeywordToken(KeywordToken.TYPE.LOOP, KeywordToken.KEYWORD.WHILE, Positioner.End(Index, Line)),
             
+            "variable" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.VARIABLE, Positioner.End(Index, Line)),
             "constructor" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CONSTRUCTOR, Positioner.End(Index, Line)),
             "function" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.FUNCTION, Positioner.End(Index, Line)),
             "class" => new KeywordToken(KeywordToken.TYPE.DEFINITION, KeywordToken.KEYWORD.CLASS, Positioner.End(Index, Line)),
@@ -194,6 +208,7 @@ public class Tokenizer {
             NextCharacter();
         }
         return data switch {
+            "$" => new OperatorToken(OperatorToken.OPERATOR.FORMAT_STRING, Positioner.End(Index, Line)),
             "." => new OperatorToken(OperatorToken.OPERATOR.DOT, Positioner.End(Index, Line)),
             "+" => new OperatorToken(OperatorToken.OPERATOR.ADD, Positioner.End(Index, Line)),
             "-" => new OperatorToken(OperatorToken.OPERATOR.SUBTRACT, Positioner.End(Index, Line)),
@@ -203,7 +218,6 @@ public class Tokenizer {
             "%" => new OperatorToken(OperatorToken.OPERATOR.MODOLUS, Positioner.End(Index, Line)),
             
             "=" => new OperatorToken(OperatorToken.OPERATOR.ASSIGN, Positioner.End(Index, Line)),
-            ":" => new OperatorToken(OperatorToken.OPERATOR.COLON, Positioner.End(Index, Line)),
 
             "!" => new OperatorToken(OperatorToken.OPERATOR.NOT, Positioner.End(Index, Line)),
             "|" => new OperatorToken(OperatorToken.OPERATOR.BITWISE_OR, Positioner.End(Index, Line)),
@@ -227,6 +241,7 @@ public class Tokenizer {
             "/=" => new OperatorToken(OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN, Positioner.End(Index, Line)),
             "^=" => new OperatorToken(OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN, Positioner.End(Index, Line)),
             "%=" => new OperatorToken(OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN, Positioner.End(Index, Line)),
+            "=>" => new OperatorToken(OperatorToken.OPERATOR.EXECUTES, Positioner.End(Index, Line)),
             _ => throw new TokenizerError(TokenizerError.TYPE.UNIDENTIFIED_OPERATOR, Positioner.End(Index, Line), $"'{data}'")
         };
     }

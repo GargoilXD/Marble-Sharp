@@ -1,4 +1,4 @@
-public partial class KeywordNode : Node {
+public class KeywordNode : Node {
     public KeywordToken.TYPE Type {private set; get;}
     public KeywordToken.KEYWORD Keyword {private set; get;}
     public KeywordNode(KeywordToken.TYPE keyword_type, KeywordToken.KEYWORD keyword, TokenPosition position) : base(position) {

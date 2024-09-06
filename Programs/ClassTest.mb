@@ -1,19 +1,21 @@
+#
 class Human {
-	public integer Age
-	public string Gender
+	public variable integer Age
+	public variable string Gender
 	public constructor(integer age, string gender) {
 		Age = age
 		Gender = gender
 	}
 }
-class Person extends Human {
-	public string First_name
-	public string Last_name
-	public constructor(string first_name, string last_name, integer age, string gender) {
+class Human Person {
+	public variable string First_name
+	public variable string Last_name
+	public constructor(string first_name, string last_name, integer age, string gender) : (age, Gender) {
 		First_name = first_name
 		Last_name = last_name
-		Age = age
-		Gender = gender
+	}
+	public function string to_string() {
+		return First_name + " " + Last_name + " " + Age + " " + Gender
 	}
 	public function void speak(string sentence) {
 		Print(First_name + ": " + sentence)
@@ -22,9 +24,41 @@ class Person extends Human {
 		speak("My name is " + First_name + " " + Last_name + ", I am " + Age + " Years old and I am a " + Gender)
 	}
 }
-Person Person_A = Person("Mary", "Underling", 19, "Femoid")
+variable Person Person_A = Person("Mary", "Underling", 19, "Femoid")
 Person_A.speak("I'm alive!!")
 Person_A.give_ID()
-Person Person_B = Person("Kweku", "Ananse", 500, "Spider")
+variable Person Person_B = Person("Kweku", "Ananse", 500, "Spider")
 Person_B.speak("I'm alive!!")
 Person_B.give_ID()
+#
+variable string x = $"fngfgnf: {x}"
+variable callable func = function (string x) {
+	return x
+}
+
+variable string x = if (x == 0) => "HI" else => "Bye"
+for (x in [0, 2, 2]) => Print("Hi")
+function integer add(classified [integer left, integer right]) {
+	return a + b
+}
+add(right:3, left:4)
+function string combine(unlimited words) {
+	string combination = ""
+	for (word in words) {
+		combination += word
+	}
+	return combination
+}
+combine("asdsa", "asfdsad", "adasdasd")
+
+function string show_students(classified unlimited names) {
+	string students = ""
+	for (name, age in names) => students += $"{name}: {age}"
+	return students
+}
+show_students(kobby:334, kwame:423)
+function void test(classified unlimited names, classified [integer left, integer right]) => 5
+
+
+
+

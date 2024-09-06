@@ -1,15 +1,13 @@
 public class StorageClass : StorageEntity {
     public ContextualStorage Storage {private set; get;}
-    public StorageClass(ACCESS_MODE access_mode, bool is_static, ContextualStorage storage) : base(access_mode, is_static, DATATYPE.USER_DEFINED) {
+    public StorageClass(ACCESSMODE access_mode, bool is_static, string class_name, ContextualStorage storage) : base(access_mode, DATATYPE.USER_DEFINED, is_static) {
+        Class_name = class_name;
         Storage = storage;
     }
-    public override object GetData() {
-        return Storage;
-    } 
     public override StorageClass Duplicate() {
-        return new StorageClass(AccessMode, IsStatic, Storage.Duplicate());
+        return new StorageClass(AccessMode, IsStatic, Class_name, Storage.Duplicate());
     }
     public override string ToString() {
-        return $"Access mode: {AccessMode}, Static: {IsStatic}, Return type: {Datatype}";
+        return $"Access mode: {AccessMode}, Static: {IsStatic}, Datatype: {Datatype}";
     }
 }

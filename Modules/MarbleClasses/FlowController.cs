@@ -7,12 +7,17 @@ public class FlowController : InterpreterOutput {
         BREAKPOINT
     }
     public TYPE Type;
-    public MarbleData Data;
-    public FlowController(TYPE type, MarbleData data = null) {
+    public FlowController(TYPE type) {
         Type = type;
-        Data = data;
     }
     public override string ToString() {
         return Type.ToString();
+    }
+    public class Return : FlowController {
+        public MarbleData Data;
+        public Return(MarbleData data = null) : base(TYPE.RETURN) {
+            Data = data;
+        }
+
     }
 }

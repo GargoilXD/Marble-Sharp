@@ -1,5 +1,5 @@
 public abstract class StorageEntity : InterpreterOutput {
-    public enum ACCESS_MODE {
+    public enum ACCESSMODE {
         NONE,
         PRIVATE,
         PUBLIC
@@ -13,17 +13,18 @@ public abstract class StorageEntity : InterpreterOutput {
         STRING,
         LIST,
         DICTIONARY,
+        CALLABLE,
         USER_DEFINED
     }
-    public ACCESS_MODE AccessMode;
-    public bool IsStatic;
+    public ACCESSMODE AccessMode;
     public DATATYPE Datatype;
-    public StorageEntity(ACCESS_MODE access_mode, bool is_static, DATATYPE datatype) {
+    public bool IsStatic;
+    public string Class_name;
+    public StorageEntity(ACCESSMODE access_mode, DATATYPE datatype, bool is_static) {
         IsStatic = is_static;
         AccessMode = access_mode;
         Datatype = datatype;
     }
-    public abstract object GetData(); 
     public abstract StorageEntity Duplicate();
     public override string ToString() {
         return $"Access mode: {AccessMode}, Static: {IsStatic}, Datatype: {Datatype}";

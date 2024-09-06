@@ -11,10 +11,10 @@ public class ContextualStorage {
         Parent = null;
     }
 	public ContextualStorage(ContextualStorage parent) {
-        Parent = parent;
         Variables = new Dictionary<string, StorageVariable>();
         Functions = new Dictionary<string, StorageFunction>();
         Classes = new Dictionary<string, StorageClass>();
+        Parent = parent;
     }
 	public ContextualStorage(ContextualStorage parent, Dictionary<string, StorageVariable> variables, Dictionary<string, StorageFunction> functions, Dictionary<string, StorageClass> classes) {
         Parent = parent;
@@ -46,6 +46,7 @@ public class ContextualStorage {
 	public void Reset() {
 		Variables.Clear();
 		Functions.Clear();
+		Classes.Clear();
     }
 	public void CreateVariable(string key, StorageVariable storage_variable) {
 		Variables[key] = storage_variable;

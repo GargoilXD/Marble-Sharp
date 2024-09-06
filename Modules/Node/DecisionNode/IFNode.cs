@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 public class IFNode : Node {
     public Node Expression {private set; get;}
-    public InstructionListNode Implication {private set; get;}
+    public OperandInstructionNode Implication {private set; get;}
     public List<ElseIFNode> Else_IF_nodes {private set; get;}
-    public InstructionListNode Inverse {private set; get;}
-    public IFNode(Node expression, InstructionListNode implication, List<ElseIFNode> else_if_nodes, InstructionListNode inverse, TokenPosition position) : base(position){
+    public OperandInstructionNode Inverse {private set; get;}
+    public IFNode(Node expression, OperandInstructionNode implication, List<ElseIFNode> else_if_nodes, OperandInstructionNode inverse, TokenPosition position) : base(position){
         Expression = expression;
         Implication = implication;
         Else_IF_nodes = else_if_nodes;
@@ -15,8 +15,8 @@ public class IFNode : Node {
     }
     public class ElseIFNode : Node {
         public Node Expression {private set; get;}
-        public InstructionListNode Implication {private set; get;}
-        public ElseIFNode(Node expression, InstructionListNode implication, TokenPosition position) : base(position){
+        public OperandInstructionNode Implication {private set; get;}
+        public ElseIFNode(Node expression, OperandInstructionNode implication, TokenPosition position) : base(position){
             Expression = expression;
             Implication = implication;
         }

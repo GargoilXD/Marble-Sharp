@@ -1,16 +1,15 @@
 using System.Collections.Generic;
 public class StorageFunction : StorageEntity {
+    public bool UnlimitedArguments;
     public List<Node> Arguments {private set; get;}
-    public InstructionListNode Instructions {private set; get;}
-    public StorageFunction(ACCESS_MODE access_mode, bool is_static, DATATYPE datatype, List<Node> arguments, InstructionListNode instructions) : base(access_mode, is_static, datatype) {
+    public OperandInstructionNode Instructions {private set; get;}
+    public StorageFunction(ACCESSMODE access_mode, DATATYPE datatype, bool is_static, bool unlimited_arguments, List<Node> arguments, OperandInstructionNode instructions) : base(access_mode, datatype, is_static) {
+        UnlimitedArguments = unlimited_arguments;
         Arguments = arguments;
         Instructions = instructions;
     }
-    public override object GetData() {
-        return null;
-    } 
     public override StorageFunction Duplicate() {
-        return new StorageFunction(AccessMode, IsStatic, Datatype, Arguments, Instructions);
+        return new StorageFunction(AccessMode, Datatype, IsStatic, UnlimitedArguments, Arguments, Instructions);
     }
     public override string ToString() {
         return $"Access mode: {AccessMode}, Static: {IsStatic}, Return type: {Datatype}, Arguments: {Arguments}";

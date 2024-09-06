@@ -1,45 +1,78 @@
-public abstract class MarbleData : InterpreterOutput {
-    public abstract MarbleData Duplicate();
-    public static MarbleData FromDataNode(DataNode data_node) {
-        switch (data_node.Type) {
-            case DataNode.TYPE.BOOLEAN:
-                return new MarbleBoolean((bool) data_node.Data);
-            case DataNode.TYPE.INTEGER:
-                return new MarbleInteger((int) data_node.Data);
-            case DataNode.TYPE.FLOAT:
-                return new MarbleFloat((float) data_node.Data);
-            case DataNode.TYPE.STRING:
-                return new MarbleString((string) data_node.Data);
+using System.Collections.Generic;
+public class MarbleData : InterpreterOutput {
+    public enum TYPE {
+        BOOLEAN,
+        INTEGER,
+        FLOAT,
+        STRING,
+        LIST,
+        DICTIONARY,
+        CALLABLE,
+        OBJECT
+    }
+    public TYPE type;
+    public object value;
+    public MarbleData(TYPE type, object value) {
+        this.type = type;
+        this.value = value;
+    }
+    public MarbleData duplicate() {
+        switch (value) {
+            case List<MarbleData> list:
+                List<MarbleData> list_copy = new List<MarbleData>();
+                foreach (MarbleData element in list) list_copy.Add(element.duplicate());
+                return new MarbleData(type, list_copy);
+            case Dictionary<object, MarbleData> dictionary:
+                Dictionary<object, MarbleData> dictionary_copy = new Dictionary<object, MarbleData>();
+                foreach (KeyValuePair<object, MarbleData> element in dictionary) dictionary_copy.Add(element.Key, element.Value.duplicate());
+                return new MarbleData(type, dictionary_copy);
+            default:
+                return new MarbleData(type, value);
         }
-        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, data_node.Position);
     }
-    public abstract void set_data(object data);
-    public abstract object get_data();
-    public abstract MarbleData convert(MarbleData operand, TokenPosition position);
-    public abstract MarbleData add(MarbleData operand, TokenPosition position);
-    public abstract MarbleData subtract(MarbleData operand, TokenPosition position);
-    public abstract MarbleData multiply(MarbleData operand, TokenPosition position);
-    public abstract MarbleData divide(MarbleData operand, TokenPosition position);
-    public abstract MarbleInteger integer_divide(MarbleData operand, TokenPosition position);
-    public abstract MarbleData exponent(MarbleData operand, TokenPosition position);
-    public abstract MarbleData modolus(MarbleData operand, TokenPosition position);
-    public abstract MarbleData bitwise_and(MarbleData operand, TokenPosition position);
-    public abstract MarbleData bitwise_or(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean equals(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean not_equals(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean greater_than(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean greater_than_or_equals(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean lesser_than(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean lesser_than_or_equals(MarbleData operand, TokenPosition position);
-    public abstract MarbleBoolean contains(MarbleData operand, TokenPosition position);
-    public abstract MarbleData negate(TokenPosition position);
-    public MarbleBoolean is_is(MarbleData operand) {
-        return new MarbleBoolean(GetType() == operand.GetType());
+    public MarbleData convert_to(TYPE type, TokenPosition position) {
+        return type switch {
+            TYPE.BOOLEAN => MarbleBoolean.Convert(this, position),
+            TYPE.INTEGER => MarbleInteger.Convert(this, position),
+            TYPE.FLOAT => MarbleFloat.Convert(this, position),
+            TYPE.STRING => MarbleString.Convert(this),
+            TYPE.LIST => MarbleList.Convert(this, position),
+            TYPE.DICTIONARY => MarbleDictionary.Convert(this, position),
+            TYPE.CALLABLE => MarbleCallable.Convert(this, position),
+            TYPE.OBJECT => MarbleObject.Convert(this, position),
+            _ => null
+        };
     }
-    public MarbleBoolean and(MarbleData operand, TokenPosition position) {
-        return new MarbleBoolean(MarbleBoolean.Convert(this, position).Value && MarbleBoolean.Convert(operand, position).Value);
+    public bool as_boolean(TokenPosition position = null) {
+        if (type != TYPE.BOOLEAN) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return (bool) value;
     }
-    public MarbleBoolean or(MarbleData operand, TokenPosition position) {
-        return new MarbleBoolean(MarbleBoolean.Convert(this, position).Value || MarbleBoolean.Convert(operand, position).Value);
+    public int as_integer(TokenPosition position = null) {
+        if (type != TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return (int) value;
+    }
+    public float as_float(TokenPosition position = null) {
+        if (type != TYPE.FLOAT) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return (float) value;
+    }
+    public string as_string(TokenPosition position = null) {
+        if (type != TYPE.STRING) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return (string) value;
+    }
+    public List<MarbleData> as_list(TokenPosition position = null) {
+        if (type != TYPE.LIST) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return value as List<MarbleData>;
+    }
+    public Dictionary<object, MarbleData> as_dictionary(TokenPosition position = null) {
+        if (type != TYPE.DICTIONARY) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return value as Dictionary<object, MarbleData>;
+    }
+    public StorageFunction as_callable(TokenPosition position = null) {
+        if (type != TYPE.CALLABLE) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return value as StorageFunction;
+    }
+    public StorageClass as_object(TokenPosition position = null) {
+        if (type != TYPE.OBJECT) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, position);
+        return value as StorageClass;
     }
 }

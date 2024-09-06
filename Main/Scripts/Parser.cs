@@ -68,28 +68,48 @@ public class Parser {
         next_token();
         return elements;
     }
-    private Node get_bracket_operation(Node node) { 
+    private Node get_dot_operation(Node node) {
+        while (CurrentToken.is_operator(OperatorToken.OPERATOR.DOT, out OperatorToken operator_token)) {
+            next_token();
+            if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
+            node = new BinaryOperatorNode(node, operator_token, get_bracket_operation(get_operand_node()));
+        }
+        return node;
+    }
+    private Node get_dot_or_bracket(Node node) {
         while (true) {
             switch (CurrentToken) {
                 case OperatorToken operator_token:
                     if (operator_token.Type != OperatorToken.OPERATOR.DOT) return node;
-                    next_token();
-                    if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-                    if (NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-                    return new BinaryOperatorNode(node, operator_token, get_bracket_operation(get_operand_node()));
-
+                        node = get_dot_operation(node);
+                        break;
+                case SymbolToken symbol_token:
+                    switch (symbol_token.Symbol) {
+                        case SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET: case SymbolToken.SYMBOL.LEFT_SQUARE_BRACKET:
+                            node = get_bracket_operation(node);
+                            break;
+                        default:
+                            return node;
+                    }
+                    break;
+                default:
+                    return node;
+            }
+        }
+    }
+    private Node get_bracket_operation(Node node) { 
+        while (true) {
+            switch (CurrentToken) {
                 case SymbolToken symbol_token:
                     switch (symbol_token.Symbol) {
                         case SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET: {
-                            node = new BinaryOperatorNode(node, new OperatorToken(OperatorToken.OPERATOR.CALLER, CurrentToken.Position), new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", () => get_expression(), out TokenPosition position), position));
+                            node = new BinaryOperatorNode(node, new OperatorToken(OperatorToken.OPERATOR.CALLER, CurrentToken.Position), new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_function_parameter, out TokenPosition position), position));
                             break;
                         }
                         case SymbolToken.SYMBOL.LEFT_SQUARE_BRACKET: {
                             node = new BinaryOperatorNode(node, new OperatorToken(OperatorToken.OPERATOR.ACCESSOR, CurrentToken.Position), new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_SQUARE_BRACKET, "[", "]", () => get_expression(), out TokenPosition position), position));
                             break;
                         }
-                        case SymbolToken.SYMBOL.LEFT_CURLY_BRACKET:
-                            return node;
                         default:
                             return node;
                     }
@@ -100,11 +120,11 @@ public class Parser {
         }
     }
     private Node get_binary_node(Func<Node> left, OperatorToken.OPERATOR[] precedence, Func<Node> right) {
-        Node left_node = get_bracket_operation(left());
+        Node left_node = get_dot_or_bracket(left());
         while (CurrentToken is OperatorToken && precedence.Contains(((OperatorToken) CurrentToken).Type)) {
             OperatorToken operatorToken = CurrentToken as OperatorToken;
             next_token();
-            left_node = new BinaryOperatorNode(left_node, operatorToken, get_bracket_operation(right()));
+            left_node = new BinaryOperatorNode(left_node, operatorToken, get_dot_or_bracket(right()));
         }
         return left_node;
     }
@@ -112,13 +132,25 @@ public class Parser {
         switch (CurrentToken) {
             case KeywordToken keyword_token:
                 switch (keyword_token.Type) {
-                    case KeywordToken.TYPE.MODIFIER: case KeywordToken.TYPE.FLOWCONTROL:
+                    case KeywordToken.TYPE.MODIFIER:
+                        if (keyword_token.is_keyword(KeywordToken.KEYWORD.REFERENCE)) {
+                            next_token();
+                            return new UnaryOperatorNode(keyword_token, DataNode.FromToken(get_identifier_token()));
+                        }
+                        throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position);
+                    case KeywordToken.TYPE.FLOWCONTROL:
                     case KeywordToken.TYPE.LOOP:
                         throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position);
                     case KeywordToken.TYPE.DEFINITION:
                         switch (keyword_token.Keyword) {
                             case KeywordToken.KEYWORD.FUNCTION:
-                                throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, keyword_token.Position);
+                                next_token();
+                                bool unlimited_arguments = false;
+                                if (CurrentToken.is_keyword(KeywordToken.KEYWORD.UNLIMITED)) {
+                                    unlimited_arguments = true;
+                                    next_token();
+                                }
+                                return new InlineFunctionDefinitionNode(unlimited_arguments, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_function_argument, out _), get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.RETURN_STATEMENT + STRUCTURES.STATEMENT), keyword_token.Position + PreviousToken.Position);
                             default:
                                 throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position);
                         }
@@ -126,25 +158,8 @@ public class Parser {
                         switch (keyword_token.Keyword) {
                             case KeywordToken.KEYWORD.ELSE_IF: case KeywordToken.KEYWORD.ELSE:
                                 throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position, "Expected if");
-                            case KeywordToken.KEYWORD.IF: {
-                                next_token();
-                                if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
-                                Node if_expression = get_operand_node();
-                                Node implication = get_expression();
-                                List<InlineIFNode.InlineElseIFNode> children = new List<InlineIFNode.InlineElseIFNode>();
-                                while (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE_IF)) {
-                                    KeywordToken else_if_token = CurrentToken as KeywordToken;
-                                    next_token();
-                                    if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
-                                    children.Add(new InlineIFNode.InlineElseIFNode(get_operand_node(), get_expression(), else_if_token.Position + PreviousToken.Position));
-                                }
-                                Node inverse = null;
-                                if (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE)) {
-                                    next_token();
-                                    inverse = get_operand_node();
-                                }
-                                return new InlineIFNode(if_expression, implication, children, inverse, keyword_token.Position + PreviousToken.Position);
-                            }
+                            case KeywordToken.KEYWORD.IF:
+                                return get_if_node(keyword_token);
                             default:
                                 return null;
                         }
@@ -167,7 +182,7 @@ public class Parser {
                 return DataNode.FromToken(data_token);
             case OperatorToken operator_token:
                 switch (operator_token.Type) {
-                    case OperatorToken.OPERATOR.ADD: case OperatorToken.OPERATOR.SUBTRACT: case OperatorToken.OPERATOR.NOT:
+                    case OperatorToken.OPERATOR.ADD: case OperatorToken.OPERATOR.SUBTRACT: case OperatorToken.OPERATOR.NOT: case OperatorToken.OPERATOR.FORMAT_STRING:
                         next_token();
                         return new UnaryOperatorNode(operator_token, get_operand_node());
                     default:
@@ -188,7 +203,7 @@ public class Parser {
                             if (CurrentToken.is_data(DataToken.TYPE.NULL)) throw new Error(CurrentToken.Position, "Key can not be null");
                             Token key = CurrentToken;
                             next_token();
-                            if (!CurrentToken.is_operator(OperatorToken.OPERATOR.COLON)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected ':'");
+                            if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.COLON)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected ':'");
                             next_token();
                             return new DataNode(DataNode.TYPE.DICTIONARY, new Dictionary<string, object>(){{"Token", key}, {"Node", get_operand_node()}}, key.Position + PreviousToken.Position);
                         }, out TokenPosition position), position);
@@ -203,115 +218,213 @@ public class Parser {
                 throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Operand");
         }
     }
-    private InstructionListNode get_instruction_list_node(int allowed_structures) {
-        if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CURLY_BRACKET, out SymbolToken symbol_token)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '{'");
-        next_token();
-        List<Node> instructions = get_nodes(allowed_structures, SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET);
-        if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET)) throw new ParserError(ParserError.TYPE.UNCLOSED_BRACKETS, symbol_token.Position + CurrentToken.Position, "Expected '}'");
-        next_token();
-        return new InstructionListNode(instructions, symbol_token.Position + PreviousToken.Position);
-    }
-    private Node deal_with_modifier_structure(int allowed_structures) {
-        switch (CurrentToken) {
-            case KeywordToken keyword_token:
-                switch (keyword_token.Type) {
-                    case KeywordToken.TYPE.MODIFIER:
-                        if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                        next_token();
-                        return new UnaryOperatorNode(keyword_token, deal_with_modifier_structure(allowed_structures));
-                    case KeywordToken.TYPE.DATATYPE:
-                        if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                        return get_variable_structure();
-                    case KeywordToken.TYPE.DEFINITION:
-                        switch (keyword_token.Keyword) {
-                            case KeywordToken.KEYWORD.FUNCTION:
-                                if (!STRUCTURES.IN(STRUCTURES.FUNCTION, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                                next_token();
-                                return get_function_structure(keyword_token);
-                            case KeywordToken.KEYWORD.CLASS:
-                                if (!STRUCTURES.IN(STRUCTURES.CLASS, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                                next_token();
-                                return get_class_structure(keyword_token);
-                            case KeywordToken.KEYWORD.CONSTRUCTOR:
-                                if (!STRUCTURES.IN(STRUCTURES.CONSTRUCTOR, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                                next_token();
-                                return get_constructor_structure(keyword_token);
-                            default:
-                                throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, keyword_token.Position);
-                        }
-                    default:
-                        throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, keyword_token.Position, "Expected modifier, datatype, class, function or identifier");
-                }
-            case DataToken data_token:
-                if (data_token.Type != DataToken.TYPE.WORD) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, data_token.Position, "Expected Datatype");
-                if (!NewDatatypes.Contains(data_token.Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, data_token.Position, "Expected Datatype");
-                if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                return get_variable_structure();
-            default:
-                throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected modifier, datatype, class, function or identifier");
-        }
-    }
-    private Node get_variable_structure() {
-        Token datatype;
+    private Node get_datatype_node() {
+        Node datatype;
         if (CurrentToken.is_keyword_type(KeywordToken.TYPE.DATATYPE)) {
-            if (CurrentToken.is_keyword(KeywordToken.KEYWORD.VOID)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Unexpected datatype");
-            datatype = CurrentToken;
-        } else if (CurrentToken.is_data(DataToken.TYPE.WORD)) {
-            datatype = CurrentToken;
+            datatype = KeywordNode.FromToken(CurrentToken as KeywordToken);
+            next_token();
+        } else if (CurrentToken.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) {
+            next_token();
+            datatype = get_dot_operation(DataNode.FromToken(PreviousToken as DataToken));
         } else {
             throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected datatype");
         }
-        next_token();
+        return datatype;
+    }
+    private DataToken get_identifier_token() {
         if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
         if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-        DataNode identifier = DataNode.FromToken(CurrentToken as DataToken);
         next_token();
-        if (CurrentToken is OperatorToken) {
-            if (!CurrentToken.is_operator(OperatorToken.OPERATOR.ASSIGN, out OperatorToken operator_token)) throw new ParserError(ParserError.TYPE.UNEXPECTED_OPERATOR, CurrentToken.Position, "Expected '='");
-            next_token();
-            return new BinaryOperatorNode(new UnaryOperatorNode(datatype, identifier), operator_token, get_expression());
-        }
-        return new UnaryOperatorNode(datatype, identifier);
+        return PreviousToken as DataToken;
     }
-    private Node get_function_structure(KeywordToken keyword_token) {
-        Token datatype;
-        if (CurrentToken.is_keyword_type(KeywordToken.TYPE.DATATYPE)) {
-            datatype = CurrentToken;
-        } else if (CurrentToken.is_data(DataToken.TYPE.WORD)) {
-            datatype = CurrentToken;
+    private FunctionParameterNode get_function_parameter() {
+        Node possible_identifier = get_expression();
+        if (possible_identifier is DataNode && (possible_identifier as DataNode).Type == DataNode.TYPE.IDENTIFIER) {
+            if (CurrentToken.is_symbol(SymbolToken.SYMBOL.COLON)) {
+                next_token();
+                return new FunctionParameterNode.Classified(possible_identifier, get_expression(), possible_identifier.Position + PreviousToken.Position);
+            }
         } else {
-            throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected datatype");
+            if (CurrentToken.is_symbol(SymbolToken.SYMBOL.COLON)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
         }
-        next_token();
-        if (!CurrentToken.is_data(DataToken.TYPE.WORD, out DataToken data_token)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-        if (NewDatatypes.Contains((CurrentToken as DataToken).Data)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-        Node identifier = new UnaryOperatorNode(datatype, DataNode.FromToken(data_token));
-        next_token();
-        DataNode arguments = new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_variable_structure, out TokenPosition position), position);
-        InstructionListNode instruction = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.RETURN_STATEMENT + STRUCTURES.STATEMENT);
-        Node function = new BinaryOperatorNode(identifier, new OperatorToken(OperatorToken.OPERATOR.CALLER, identifier.Position), arguments);
-        Node definition = new BinaryOperatorNode(function, new OperatorToken(OperatorToken.OPERATOR.DEFINES, identifier.Position), instruction);
-        return new UnaryOperatorNode(keyword_token, definition);
+        return new FunctionParameterNode(possible_identifier, possible_identifier.Position + PreviousToken.Position);
     }
-    private Node get_constructor_structure(KeywordToken keyword_token) {
-        DataNode arguments = new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_variable_structure, out TokenPosition position), position);
-        InstructionListNode instruction = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.STATEMENT);
-        Node definition = new BinaryOperatorNode(arguments, new OperatorToken(OperatorToken.OPERATOR.DEFINES, arguments.Position), instruction);
-        return new UnaryOperatorNode(keyword_token, definition);
+    private FunctionArgumentNode get_function_argument() {
+        bool is_classified = false;
+        if (CurrentToken.is_keyword(KeywordToken.KEYWORD.CLASSIFIED)) {
+            is_classified = true;
+            next_token();
+        }
+        Node datatype = get_datatype_node();
+        DataToken identifier = get_identifier_token();
+        Node value = null;
+        if (CurrentToken is OperatorToken) {
+            if (!CurrentToken.is_operator(OperatorToken.OPERATOR.ASSIGN)) throw new ParserError(ParserError.TYPE.UNEXPECTED_OPERATOR, CurrentToken.Position, "Expected '='");
+            next_token();
+            value = get_expression();
+        }
+        return new FunctionArgumentNode(is_classified, datatype, identifier, value, datatype.Position + PreviousToken.Position);
     }
-    private Node get_class_structure(KeywordToken keyword_token) {
-        if (!CurrentToken.is_data(DataToken.TYPE.WORD, out DataToken data_token)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected Identifier");
-        if (NewDatatypes.Contains(data_token.Data as string)) throw new ParserError(ParserError.TYPE.ALREADY_DEFINED_DATATYPE, data_token.Position);
-        Node expression = get_binary_node(get_operand_node, new [] {OperatorToken.OPERATOR.EXTENDS}, () => get_expression());
-        add_new_datatype(data_token);
-        InstructionListNode instruction = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FUNCTION + STRUCTURES.CLASS + STRUCTURES.CONSTRUCTOR + STRUCTURES.MODIFIER);
-        Node definition = new BinaryOperatorNode(expression, new OperatorToken(OperatorToken.OPERATOR.DEFINES, expression.Position), instruction);
-        return new UnaryOperatorNode(keyword_token, definition);
+    private Node get_definition_node(int allowed_structures) {
+        KeywordToken access_mode_modifier = null;
+        KeywordToken static_modifier = null;
+        KeywordToken constant_modifier = null;
+        KeywordToken reference_modifier = null;
+        while (CurrentToken.is_keyword_type(KeywordToken.TYPE.MODIFIER, out KeywordToken modifier)) {
+            switch (modifier.Keyword) {
+                case KeywordToken.KEYWORD.PRIVATE:
+                    if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    if (access_mode_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    access_mode_modifier = modifier;
+                    break;
+                case KeywordToken.KEYWORD.PUBLIC:
+                    if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    if (access_mode_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    access_mode_modifier = modifier;
+                    break;
+                case KeywordToken.KEYWORD.STATIC:
+                    if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    if (static_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    static_modifier = modifier;
+                    break;
+                case KeywordToken.KEYWORD.CONSTANT:
+                    if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    if (constant_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    constant_modifier = modifier;
+                    break;
+                case KeywordToken.KEYWORD.REFERENCE:
+                    if (!STRUCTURES.IN(STRUCTURES.MODIFIER, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    if (reference_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+                    reference_modifier = modifier;
+                    break;
+                default:
+                    throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, modifier.Position);
+            }
+            next_token();
+        }
+        if(!CurrentToken.is_keyword_type(KeywordToken.TYPE.DEFINITION, out KeywordToken definition)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "class, function or variable");
+        next_token();
+        if (definition.Keyword == KeywordToken.KEYWORD.CONSTRUCTOR) {
+            if (!STRUCTURES.IN(STRUCTURES.CONSTRUCTOR, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+            if (constant_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, constant_modifier.Position);
+            if (reference_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, reference_modifier.Position);
+            bool unlimited_arguments = false;
+            if (CurrentToken.is_keyword(KeywordToken.KEYWORD.UNLIMITED)) {
+                unlimited_arguments = true;
+                next_token();
+            }
+            List<Node> arguments = null;
+            if (unlimited_arguments) {
+                if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                next_token();
+                arguments = new List<Node>() { get_function_argument() };
+                if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                next_token();
+            } else {
+                arguments = get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_function_argument, out _);
+            }
+            List<Node> base_parameters = null;
+            if (CurrentToken.is_symbol(SymbolToken.SYMBOL.COLON)) {
+                next_token();
+                base_parameters = get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", () => get_expression(), out _);
+            }
+            return new ConstructorNode(access_mode_modifier, static_modifier, unlimited_arguments, arguments, base_parameters, get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.STATEMENT), definition.Position + PreviousToken.Position);
+        }
+        switch (definition.Keyword) {
+            case KeywordToken.KEYWORD.VARIABLE: {
+                if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                Node datatype = get_datatype_node();
+                if (datatype is KeywordNode && (datatype as KeywordNode).Keyword == KeywordToken.KEYWORD.VOID) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Unexpected datatype");
+                DataToken identifier = get_identifier_token();
+                Node value = null;
+                if (CurrentToken is OperatorToken) {
+                    if (!CurrentToken.is_operator(OperatorToken.OPERATOR.ASSIGN)) throw new ParserError(ParserError.TYPE.UNEXPECTED_OPERATOR, CurrentToken.Position, "Expected '='");
+                    next_token();
+                    value = get_expression();
+                }
+                return new VariableDefinitionNode(access_mode_modifier, static_modifier, constant_modifier, reference_modifier, datatype, identifier, value, definition.Position + PreviousToken.Position);
+            }
+            case KeywordToken.KEYWORD.FUNCTION: {
+                if (!STRUCTURES.IN(STRUCTURES.FUNCTION, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                if (constant_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, constant_modifier.Position);
+                if (reference_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, reference_modifier.Position);
+                bool unlimited_arguments = false;
+                if (CurrentToken.is_keyword(KeywordToken.KEYWORD.UNLIMITED)) {
+                    unlimited_arguments = true;
+                    next_token();
+                }
+                Node datatype = get_datatype_node();
+                DataToken identifier = get_identifier_token();
+                List<Node> arguments = null;
+                if (unlimited_arguments) {
+                    if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                    next_token();
+                    arguments = new List<Node>() { get_function_argument() };
+                    if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                    next_token();
+                } else {
+                    arguments = get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", get_function_argument, out _);
+                }
+                return new FunctionDefinitionNode(access_mode_modifier, static_modifier, unlimited_arguments, datatype, identifier, arguments, get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.RETURN_STATEMENT + STRUCTURES.STATEMENT), definition.Position + PreviousToken.Position);
+            }
+            case KeywordToken.KEYWORD.CLASS: {
+                if (!STRUCTURES.IN(STRUCTURES.CLASS, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                if (constant_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, constant_modifier.Position);
+                if (reference_modifier != null) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, reference_modifier.Position);
+                Node datatype = null;
+                if (CurrentToken.is_keyword_type(KeywordToken.TYPE.DATATYPE)) {
+                    throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+                } else if (CurrentToken.is_data(DataToken.TYPE.WORD) && NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) {
+                    next_token();
+                    datatype = get_dot_operation(DataNode.FromToken(PreviousToken as DataToken));
+                }
+                DataToken identifier = get_identifier_token();
+                add_new_datatype(identifier);
+                return new ClassDefinitionNode(access_mode_modifier, static_modifier, datatype, identifier, get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FUNCTION + STRUCTURES.CLASS + STRUCTURES.CONSTRUCTOR + STRUCTURES.MODIFIER), definition.Position + PreviousToken.Position);
+            }
+            default:
+                throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
+        }
+    }
+    private OperandInstructionNode get_operand_instruction_node(int allowed_structures) {
+        if (CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CURLY_BRACKET, out SymbolToken symbol_token)) {
+            next_token();
+            while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
+            List<Node> instructions = get_nodes(allowed_structures, SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET);
+            if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET)) throw new ParserError(ParserError.TYPE.UNCLOSED_BRACKETS, symbol_token.Position + CurrentToken.Position, "Expected '}'");
+            next_token();
+            return new OperandInstructionNode(instructions, false, symbol_token.Position + PreviousToken.Position);
+        } else if (CurrentToken.is_operator(OperatorToken.OPERATOR.EXECUTES, out OperatorToken operator_token)) {
+            next_token();
+            return new OperandInstructionNode(new List<Node>{ get_expression() }, true, operator_token.Position + PreviousToken.Position);
+        } else {
+            throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '{' or '=>'");
+        }
+    }
+    private IFNode get_if_node(KeywordToken keyword_token) {
+        next_token();
+        if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
+        Node if_expression = get_operand_node();
+        OperandInstructionNode implication = get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
+        List<IFNode.ElseIFNode> children = new List<IFNode.ElseIFNode>();
+        while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
+        while (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE_IF)) {
+            KeywordToken else_if_token = CurrentToken as KeywordToken;
+            next_token();
+            if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
+            children.Add(new IFNode.ElseIFNode(get_operand_node(), get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT), else_if_token.Position + PreviousToken.Position));
+            while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
+        }
+        OperandInstructionNode inverse = null;
+        if (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE)) {
+            next_token();
+            inverse = get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
+        }
+        return new IFNode(if_expression, implication, children, inverse, keyword_token.Position + PreviousToken.Position);
     }
     private List<Node> get_nodes(int allowed_structures, SymbolToken.SYMBOL breaker = SymbolToken.SYMBOL.END) {
         List<Node> nodes = new List<Node>();
-        while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
-        while (!CurrentToken.is_symbol(SymbolToken.SYMBOL.END) && !CurrentToken.is_symbol(breaker)) {
+        while (!(CurrentToken.is_symbol(SymbolToken.SYMBOL.END) || CurrentToken.is_symbol(breaker))) {
             switch (CurrentToken) {
                 case KeywordToken keyword_token:
                     switch (keyword_token.Type) {
@@ -319,9 +432,12 @@ public class Parser {
                             if (!STRUCTURES.IN(STRUCTURES.STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                             switch (keyword_token.Keyword) {
                                 case KeywordToken.KEYWORD.ELSE_IF: case KeywordToken.KEYWORD.ELSE:
+                                    throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected if");
                                 case KeywordToken.KEYWORD.CASE: case KeywordToken.KEYWORD.DEFAULT:
                                     throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected match");
                                 case KeywordToken.KEYWORD.MATCH: {
+                                    throw new ParserError(ParserError.TYPE.UNIMPLEMENTED_TOKEN, CurrentToken.Position);
+                                    /*
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     Node expression = get_operand_node();
@@ -336,40 +452,22 @@ public class Parser {
                                         if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                         DataNode case_expression = new DataNode(DataNode.TYPE.LIST, get_bracket_node(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET, "(", ")", () => get_expression(), out TokenPosition position), position);
                                         if ((case_expression.Data as List<Node>).Count == 0) throw new ParserError(ParserError.TYPE.EMPTHY_CASE, case_token_position);
-                                        cases.Add(new MatchNode.CaseNode(case_expression, get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT), case_token_position + PreviousToken.Position));
+                                        cases.Add(new MatchNode.CaseNode(case_expression, get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT), case_token_position + PreviousToken.Position));
                                         while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
                                     }
-                                    InstructionListNode default_node = null;
+                                    OperandInstructionNode default_node = null;
                                     if (CurrentToken.is_keyword(KeywordToken.KEYWORD.DEFAULT)) {
                                         next_token();
-                                        default_node = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
+                                        default_node = get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
                                         while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
                                     }
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CURLY_BRACKET)) throw new ParserError(ParserError.TYPE.UNCLOSED_BRACKETS, keyword_token.Position + PreviousToken.Position, "Expected '{'");
                                     next_token();
                                     nodes.Add(new MatchNode(expression, cases, default_node, keyword_token.Position + PreviousToken.Position));
-                                    break;
+                                    break;*/
                                 }
                                 case KeywordToken.KEYWORD.IF: {
-                                    next_token();
-                                    if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
-                                    Node if_expression = get_operand_node();
-                                    InstructionListNode implication = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
-                                    List<IFNode.ElseIFNode> children = new List<IFNode.ElseIFNode>();
-                                    while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
-                                    while (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE_IF)) {
-                                        KeywordToken else_if_token = CurrentToken as KeywordToken;
-                                        next_token();
-                                        if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
-                                        children.Add(new IFNode.ElseIFNode(get_operand_node(), get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT), else_if_token.Position + PreviousToken.Position));
-                                        while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
-                                    }
-                                    InstructionListNode inverse = null;
-                                    if (CurrentToken.is_keyword(KeywordToken.KEYWORD.ELSE)) {
-                                        next_token();
-                                        inverse = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
-                                    }
-                                    nodes.Add(new IFNode(if_expression, implication, children, inverse, keyword_token.Position + PreviousToken.Position));
+                                    nodes.Add(get_if_node(keyword_token));
                                     break;
                                 }
                             }
@@ -408,57 +506,36 @@ public class Parser {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     next_token();
-                                    if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-                                    if (NewDatatypes.Contains((CurrentToken as DataToken).Data as string)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-                                    DataNode iterator = DataNode.FromToken(CurrentToken as DataToken);
-                                    next_token();
+                                    DataToken iterator1 = get_identifier_token();
                                     if (!CurrentToken.is_operator(OperatorToken.OPERATOR.IN))  throw new ParserError(ParserError.TYPE.EXPECTED_OPERATOR, CurrentToken.Position, "'in'");
                                     OperatorToken In = CurrentToken as OperatorToken;
                                     next_token();
-                                    Node iteratable = get_operand_node();
+                                    Node iteratable = get_expression();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected ')'");
                                     next_token();
-                                    InstructionListNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
-                                    nodes.Add(new ForNode(iterator, iteratable, instructions, keyword_token.Position + PreviousToken.Position));
+                                    OperandInstructionNode instructions = get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
+                                    nodes.Add(new ForNode(iterator1, iteratable, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }
                                 case KeywordToken.KEYWORD.WHILE: {
                                     next_token();
                                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected '('");
                                     Node expression = get_operand_node();
-                                    InstructionListNode instructions = get_instruction_list_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
+                                    OperandInstructionNode instructions = get_operand_instruction_node(STRUCTURES.VARIABLE + STRUCTURES.FLOW_CONTROL + STRUCTURES.STATEMENT + STRUCTURES.RETURN_STATEMENT);
                                     nodes.Add(new WhileNode(expression, instructions, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 }
                             }
                             break;
                         }
-                        case KeywordToken.TYPE.MODIFIER: case KeywordToken.TYPE.DEFINITION: case KeywordToken.TYPE.DATATYPE: {
-                            nodes.Add(deal_with_modifier_structure(allowed_structures));
+                        case KeywordToken.TYPE.MODIFIER: case KeywordToken.TYPE.DEFINITION:
+                            nodes.Add(get_definition_node(allowed_structures));
                             break;
-
-                        }
                         default:
                             if (!STRUCTURES.IN(STRUCTURES.STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                             nodes.Add(get_expression());
                             break;
                     }
-                    break;
-                case SymbolToken symbol_token:
-                    if (!STRUCTURES.IN(STRUCTURES.STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                    nodes.Add(get_expression());
-                    break;
-                case DataToken data_token:
-                    if (data_token.Type == DataToken.TYPE.WORD) {
-                        if (NewDatatypes.Contains(data_token.Data as string)) {
-                            if (!STRUCTURES.IN(STRUCTURES.VARIABLE, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                            nodes.Add(get_variable_structure());
-                            break;
-                        }
-                        if ((Index + 1 < Tokens.Count) && Tokens[Index + 1] is DataToken) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Not datatype");
-                    }
-                    if (!STRUCTURES.IN(STRUCTURES.STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
-                    nodes.Add(get_expression());
                     break;
                 default:
                     if (!STRUCTURES.IN(STRUCTURES.STATEMENT, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
@@ -475,6 +552,7 @@ public class Parser {
         CurrentToken = tokens[0];
         ClearDatatypes(NewDatatypes);
         NewDatatypes.Clear();
+        while (CurrentToken.is_symbol(SymbolToken.SYMBOL.END_OF_LINE)) next_token();
         return get_nodes(STRUCTURES.VARIABLE + STRUCTURES.FUNCTION + STRUCTURES.CLASS + STRUCTURES.STATEMENT);
     }
 }

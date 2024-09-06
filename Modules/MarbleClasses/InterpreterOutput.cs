@@ -1,4 +1,4 @@
-public class InterpreterOutput {
+public abstract class InterpreterOutput {
     public FlowController IsContextControl(TokenPosition position) {
         if (this is not FlowController) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, position, "Expexted break");
         return this as FlowController;

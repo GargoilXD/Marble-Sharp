@@ -1,8 +1,8 @@
 public class ForNode : Node {
-    public DataNode Iterator {private set; get;}
+    public DataToken Iterator {private set; get;}
     public Node Iteratable {private set; get;}
-    public InstructionListNode Instructions {private set; get;}
-    public ForNode(DataNode iterator, Node iteratable, InstructionListNode instructions, TokenPosition position) : base(position){
+    public OperandInstructionNode Instructions {private set; get;}
+    public ForNode(DataToken iterator, Node iteratable, OperandInstructionNode instructions, TokenPosition position) : base(position){
         Iterator = iterator;
         Iteratable = iteratable;
         Instructions = instructions;

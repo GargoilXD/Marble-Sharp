@@ -18,7 +18,6 @@ public class OperatorToken : Token {
         BITWISE_OR,
         IN,
         IS,
-        COLON,
         EQUALS,
         NOT_EQUALS,
         GREATER_THAN,
@@ -32,7 +31,9 @@ public class OperatorToken : Token {
         DIVIDE_AND_ASSIGN,
         EXPONENT_AND_ASSIGN,
         MODOLUS_AND_ASSIGN,
-        EXTENDS
+        EXTENDS,
+        EXECUTES,
+        FORMAT_STRING
     }
     public OPERATOR Type {private set; get;}
     public OperatorToken(OPERATOR type, TokenPosition position) : base(position) {
