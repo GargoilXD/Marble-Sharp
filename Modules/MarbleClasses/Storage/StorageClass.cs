@@ -1,5 +1,6 @@
 public class StorageClass : StorageEntity {
     public ContextualStorage Storage {private set; get;}
+    public StorageFunction.Constructor constructor;
     public StorageClass(ACCESSMODE access_mode, bool is_static, string class_name, ContextualStorage storage) : base(access_mode, DATATYPE.USER_DEFINED, is_static) {
         Class_name = class_name;
         Storage = storage;

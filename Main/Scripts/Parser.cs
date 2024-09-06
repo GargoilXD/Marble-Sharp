@@ -317,7 +317,7 @@ public class Parser {
             if (unlimited_arguments) {
                 if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                 next_token();
-                arguments = new List<Node>() { get_function_argument() };
+                arguments = new List<Node>() { DataNode.FromToken(get_identifier_token()) };
                 if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                 next_token();
             } else {
@@ -359,7 +359,7 @@ public class Parser {
                 if (unlimited_arguments) {
                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.LEFT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                     next_token();
-                    arguments = new List<Node>() { get_function_argument() };
+                    arguments = new List<Node>() { DataNode.FromToken(get_identifier_token()) };
                     if (!CurrentToken.is_symbol(SymbolToken.SYMBOL.RIGHT_CIRCLE_BRACKET)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                     next_token();
                 } else {

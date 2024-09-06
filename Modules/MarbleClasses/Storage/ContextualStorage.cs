@@ -1,25 +1,29 @@
 using System.Collections.Generic;
 public class ContextualStorage {
-	private ContextualStorage Parent;
+	public ContextualStorage Parent;
 	private Dictionary<string, StorageVariable> Variables;
 	private Dictionary<string, StorageFunction> Functions;
+	private Dictionary<string, StorageFunction.Constructor> Constructors;
 	private Dictionary<string, StorageClass> Classes;
 	public ContextualStorage() {
         Variables = new Dictionary<string, StorageVariable>();
         Functions = new Dictionary<string, StorageFunction>();
+        Constructors = new Dictionary<string, StorageFunction.Constructor>();
         Classes = new Dictionary<string, StorageClass>();
         Parent = null;
     }
 	public ContextualStorage(ContextualStorage parent) {
         Variables = new Dictionary<string, StorageVariable>();
         Functions = new Dictionary<string, StorageFunction>();
+        Constructors = new Dictionary<string, StorageFunction.Constructor>();
         Classes = new Dictionary<string, StorageClass>();
         Parent = parent;
     }
-	public ContextualStorage(ContextualStorage parent, Dictionary<string, StorageVariable> variables, Dictionary<string, StorageFunction> functions, Dictionary<string, StorageClass> classes) {
+	public ContextualStorage(ContextualStorage parent, Dictionary<string, StorageVariable> variables, Dictionary<string, StorageFunction> functions, Dictionary<string, StorageFunction.Constructor> constructors, Dictionary<string, StorageClass> classes) {
         Parent = parent;
         Variables = variables;
         Functions = functions;
+        Constructors = constructors;
         Classes = classes;
     }
 	public ContextualStorage CreateChild() {
@@ -28,6 +32,7 @@ public class ContextualStorage {
     public ContextualStorage Duplicate() {
         Dictionary<string, StorageVariable> variables = new Dictionary<string, StorageVariable>();
         Dictionary<string, StorageFunction> functions = new Dictionary<string, StorageFunction>();
+        Dictionary<string, StorageFunction.Constructor> constructors = new Dictionary<string, StorageFunction.Constructor>();
         Dictionary<string, StorageClass> classes = new Dictionary<string, StorageClass>();
         foreach (KeyValuePair<string, StorageVariable> KV in Variables) {
             variables.Add(KV.Key, KV.Value.Duplicate());
@@ -35,18 +40,16 @@ public class ContextualStorage {
         foreach (KeyValuePair<string, StorageFunction> KV in Functions) {
             functions.Add(KV.Key, KV.Value.Duplicate());
         }
+        foreach (KeyValuePair<string, StorageFunction.Constructor> KV in Constructors) {
+            constructors.Add(KV.Key, KV.Value.Duplicate());
+        }
         foreach (KeyValuePair<string, StorageClass> KV in Classes) {
             classes.Add(KV.Key, KV.Value.Duplicate());
         }
         ContextualStorage parent = null;
         if (Parent != null) parent = Parent.Duplicate();
-        ContextualStorage storage = new ContextualStorage(parent, variables, functions, classes);
+        ContextualStorage storage = new ContextualStorage(parent, variables, functions, constructors, classes);
         return storage;
-    }
-	public void Reset() {
-		Variables.Clear();
-		Functions.Clear();
-		Classes.Clear();
     }
 	public void CreateVariable(string key, StorageVariable storage_variable) {
 		Variables[key] = storage_variable;
@@ -111,6 +114,21 @@ public class ContextualStorage {
             }
         }
         return null;
+    }
+    public void CreateConstructor(string name, StorageFunction.Constructor definition) {
+        Constructors[name] = definition;
+    }
+    public bool HasConstructor(string name) {
+        bool has = Constructors.ContainsKey(name);
+		return has;
+    }
+    public StorageFunction.Constructor GetConstructor(string name) {
+        if (Constructors.ContainsKey(name)){
+			return Constructors[name];
+        }
+		else {
+            return null;
+        }
     }
     public void CreateClass(string name, StorageClass definition) {
         Classes[name] = definition;

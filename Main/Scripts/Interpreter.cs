@@ -89,10 +89,19 @@ public class Interpreter {
             return new FlowController(FlowController.TYPE.DONE);
         }
     }
-    private async Task<InterpreterOutput> RunFunction(StorageFunction function, List<Node> arguments, BinaryOperatorNode function_node, ContextualStorage storage, ContextualStorage child_storage) {
-        if (arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function_node.Right.Position, "Different number of parameters");
-        for (int x = 0; x < function.Arguments.Count; x++) {
-            await AssignOperation(function.Arguments[x], (await InterpreteNode(arguments[x], storage)).ToMarbleData(arguments[x].Position), child_storage);
+    private async Task<InterpreterOutput> RunFunction(StorageFunction function, List<Node> parameters, BinaryOperatorNode function_node, ContextualStorage storage, ContextualStorage child_storage) {
+        if (function.UnlimitedArguments) {
+            if (storage.HasVariable((function.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, function.Arguments[0].Position);
+            List<MarbleData> unlimited = new List<MarbleData>();
+            for (int x = 0; x < parameters.Count; x++) {
+                unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+            }
+            child_storage.CreateVariable((function.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+        } else {
+            if (parameters.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function_node.Right.Position, "Different number of parameters");
+            for (int x = 0; x < function.Arguments.Count; x++) {
+                await AssignOperation(function.Arguments[x], (await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position), child_storage);
+            }
         }
         child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESSMODE.PRIVATE, function.Datatype, false,  false, null));
         FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
@@ -115,12 +124,12 @@ public class Interpreter {
                 switch (node.Right) {
                     case BinaryOperatorNode function: {
                         DataNode identifier = function.Left as DataNode;
-                        List<Node> arguments = (function.Right as DataNode).Data as List<Node>;
+                        List<Node> parameters = (function.Right as DataNode).Data as List<Node>;
                         if (storage_class.Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
                         StorageFunction storage_function = storage_class.Storage.GetFunction(identifier.Data as string);
                         if (!storage_function.IsStatic) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, identifier.Position, "non static");
                         if (storage_function.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_FUNCTION, function.Position);
-                        return await RunFunction(storage_function, arguments, function, storage, storage_class.Storage.CreateChild());
+                        return await RunFunction(storage_function, parameters, function, storage, storage_class.Storage.CreateChild());
                     }
                     case DataNode identifier: {
                         if (!storage_class.Storage.GetEntity(identifier.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, identifier.Position);
@@ -137,30 +146,30 @@ public class Interpreter {
                 switch (node.Right) {
                     case BinaryOperatorNode function: {
                         DataNode identifier = function.Left as DataNode;
-                        List<Node> arguments = (function.Right as DataNode).Data as List<Node>;
+                        List<Node> parameters = (function.Right as DataNode).Data as List<Node>;
                         switch (data.type) {
                             case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.DICTIONARY:
                                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
                             case MarbleData.TYPE.STRING:
                                 switch (identifier.Data as string) {
                                     case "has":
-                                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        return InOperation((await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position), data, arguments[0].Position);
+                                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        return InOperation((await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
                                 }
                             case MarbleData.TYPE.LIST: {
                                 switch (identifier.Data as string) {
                                     case "append":
-                                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        MarbleData new_element = (await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position);
+                                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        MarbleData new_element = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
                                         (data.value as List<MarbleData>).Add(new_element);
                                         break;
                                     case "has":
-                                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        return InOperation((await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position), data, arguments[0].Position);
+                                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        return InOperation((await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
                                     case "clear":
-                                        if (arguments.Count > 0) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        if (parameters.Count > 0) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
                                         (data.value as List<MarbleData>).Clear();
                                         return new FlowController(FlowController.TYPE.DONE);
 
@@ -173,7 +182,7 @@ public class Interpreter {
                                 if (!data.as_object().Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
                                 StorageFunction storage_function = data.as_object().Storage.GetFunction(identifier.Data as string);
                                 if (storage_function.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_FUNCTION, function.Position);
-                                return await RunFunction(storage_function, arguments, function, storage, data.as_object().Storage.CreateChild());
+                                return await RunFunction(storage_function, parameters, function, storage, data.as_object().Storage.CreateChild());
                             }
                             default:
                                 return null;
@@ -243,7 +252,7 @@ public class Interpreter {
         }
     }
     private async Task<InterpreterOutput> CallerOperation(BinaryOperatorNode node, ContextualStorage storage) {
-        List<Node> arguments = (node.Right as DataNode).Data as List<Node>;
+        List<Node> parameters = (node.Right as DataNode).Data as List<Node>;
         switch (node.Left) {
             case KeywordNode keyword_node: {
                 switch (keyword_node.Keyword) {
@@ -251,28 +260,28 @@ public class Interpreter {
                     case KeywordToken.KEYWORD.FLOAT: case KeywordToken.KEYWORD.STRING: case KeywordToken.KEYWORD.LIST: case KeywordToken.KEYWORD.DICTIONARY:
                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
                     case KeywordToken.KEYWORD.ASSERT: {
-                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
-                        MarbleData assertion = (await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position);
+                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                        MarbleData assertion = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
                         if (assertion.type != MarbleData.TYPE.BOOLEAN) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Expected boolean");
                         if (!assertion.as_boolean()) throw new InterpreterError(InterpreterError.TYPE.ASSERTION_FAILED, node.Right.Position);
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.PRINT: {
-                        foreach (Node argument in arguments) {
-                            Output += $"{(await MarbleDataToString((await InterpreteNode(argument, storage)).ToMarbleData(argument.Position), storage, argument.Position)).value} ";
+                        foreach (Node parameter in parameters) {
+                            Output += $"{(await MarbleDataToString((await InterpreteNode(parameter, storage)).ToMarbleData(parameter.Position), storage, parameter.Position)).value} ";
                         }
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.PRINTLINE: {
-                        foreach (Node argument in arguments) {
-                            Output += $"{(await MarbleDataToString((await InterpreteNode(argument, storage)).ToMarbleData(argument.Position), storage, argument.Position)).value} ";
+                        foreach (Node parameter in parameters) {
+                            Output += $"{(await MarbleDataToString((await InterpreteNode(parameter, storage)).ToMarbleData(parameter.Position), storage, parameter.Position)).value} ";
                         }
                         Output += '\n';
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.RANGE: {
-                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        MarbleData data = (await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position);
+                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                        MarbleData data = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
                         if (data.type != MarbleData.TYPE.INTEGER)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Position);
                         List<MarbleData> elements = new List<MarbleData>();
                         for (int x = 0; x < (int) data.value; x++) {
@@ -281,17 +290,17 @@ public class Interpreter {
                         return new MarbleData(MarbleData.TYPE.LIST, elements);
                     }
                     case KeywordToken.KEYWORD.RANDOM: {
-                        if (arguments.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        MarbleData left = (await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position);
-                        if (left.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, arguments[0].Position);
-                        MarbleData right = (await InterpreteNode(arguments[1], storage)).ToMarbleData(arguments[1].Position);
-                        if (right.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, arguments[1].Position);
+                        if (parameters.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                        MarbleData left = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
+                        if (left.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[0].Position);
+                        MarbleData right = (await InterpreteNode(parameters[1], storage)).ToMarbleData(parameters[1].Position);
+                        if (right.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[1].Position);
                         int random_number = new Random().Next(left.as_integer(), right.as_integer());
                         return new  MarbleData(MarbleData.TYPE.INTEGER, random_number);
                     }
                     case KeywordToken.KEYWORD.INPUT: {
-                        if (arguments.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        Input_dialog.DialogText = $"{(await InterpreteNode(arguments[0], storage)).ToMarbleData(arguments[0].Position)}";
+                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
+                        Input_dialog.DialogText = $"{(await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position)}";
                         Input_dialog.Show();
                         await Input_dialog.ToSignal(Input_dialog, "confirmed");
                         return new MarbleData(MarbleData.TYPE.STRING, Input_dialog.Input);
@@ -304,23 +313,52 @@ public class Interpreter {
                 switch (data_node.Type) {
                     case DataNode.TYPE.IDENTIFIER:
                         if (storage.HasFunction(data_node.Data as string)) {
-                            return await RunFunction(storage.GetFunction(data_node.Data as string), arguments, node, storage, storage.CreateChild());
+                            return await RunFunction(storage.GetFunction(data_node.Data as string), parameters, node, storage, storage.CreateChild());
                         } else if (storage.HasVariable(data_node.Data as string)) {
                             StorageVariable variable = storage.GetVariable(data_node.Data as string);
                             if (variable.Datatype != StorageEntity.DATATYPE.CALLABLE) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, data_node.Position);
-                            return await RunFunction(variable.Data.as_callable(), arguments, null, storage, storage.CreateChild());
+                            return await RunFunction(variable.Data.as_callable(), parameters, null, storage, storage.CreateChild());
                         } else if (storage.HasClass(data_node.Data as string)) {
                             StorageClass storage_class = storage.GetClass(data_node.Data as string);
                             ContextualStorage child_storage = storage_class.Storage.CreateChild();
-                            StorageFunction function = storage_class.Storage.GetFunction("Constructor!");
-                            if (function == null) {
+                            StorageFunction.Constructor constructor = storage_class.Storage.GetConstructor("1");
+                            if (constructor == null) {
                                 return new MarbleData(MarbleData.TYPE.OBJECT, storage_class);
                             }
-                            if (arguments.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
-                            for (int x = 0; x < function.Arguments.Count; x++) {
-                                await AssignOperation(function.Arguments[x], (await InterpreteNode(arguments[x], storage)).ToMarbleData(node.Right.Position), child_storage);
+                            ContextualStorage parameter_child_storage = child_storage.CreateChild();
+                            if (constructor.UnlimitedArguments) {
+                                if (storage.HasVariable((constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, constructor.Arguments[0].Position);
+                                List<MarbleData> unlimited = new List<MarbleData>();
+                                for (int x = 0; x < parameters.Count; x++) {
+                                    unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+                                }
+                                parameter_child_storage.CreateVariable((constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+                            } else {
+                                if (parameters.Count != constructor.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
+                                for (int x = 0; x < constructor.Arguments.Count; x++) {
+                                    await AssignOperation(constructor.Arguments[x], (await InterpreteNode(parameters[x], storage)).ToMarbleData(node.Right.Position), parameter_child_storage);
+                                }
                             }
-                            await InterpreteInstructionListNode(function.Instructions, child_storage);
+                            if (constructor.BaseParameters != null && constructor.BaseParameters.Count != 0) {
+                                if (storage_class.Storage.Parent == null) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, constructor.BaseParameters[0].Position, "No parent");
+                                if (!storage_class.Storage.Parent.HasConstructor("1")) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, constructor.BaseParameters[0].Position, "parent has no constructor");
+                                StorageFunction.Constructor base_constructor = storage_class.Storage.Parent.GetConstructor("1");
+                                if (base_constructor.UnlimitedArguments) {
+                                    if (storage.HasVariable((base_constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, base_constructor.Arguments[0].Position);
+                                    List<MarbleData> unlimited = new List<MarbleData>();
+                                    for (int x = 0; x < parameters.Count; x++) {
+                                        unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+                                    }
+                                    child_storage.CreateVariable((base_constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+                                } else {
+                                    if (constructor.BaseParameters.Count != base_constructor.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
+                                    for (int x = 0; x < base_constructor.Arguments.Count; x++) {
+                                        await AssignOperation(base_constructor.Arguments[x], (await InterpreteNode(constructor.BaseParameters[x], parameter_child_storage)).ToMarbleData(node.Right.Position), child_storage);
+                                    }
+                                }
+                                await InterpreteInstructionListNode(base_constructor.Instructions, child_storage);
+                            }
+                            await InterpreteInstructionListNode(constructor.Instructions, parameter_child_storage);
                             return new MarbleData(MarbleData.TYPE.OBJECT, storage_class);
                         }
                         throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
@@ -329,7 +367,7 @@ public class Interpreter {
                 }
             case BinaryOperatorNode binary: {
                 StorageFunction function = (await InterpreteBinaryOperatorNode(binary, storage)).IsStorageFunction(binary.Position);
-                return await RunFunction(function, arguments, binary, storage, storage.CreateChild());
+                return await RunFunction(function, parameters, binary, storage, storage.CreateChild());
             }
             default:
                 return null;
@@ -1104,6 +1142,7 @@ public class Interpreter {
         ContextualStorage child_storage = storage.CreateChild();
         if (child_storage.HasVariable(node.Iterator.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Iterator.Position);
         StorageVariable Iterator = new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VARIANT, false, false, null);
+        child_storage.CreateVariable(node.Iterator.Data as string, Iterator);
         MarbleData Iteratable = (await InterpreteNode(node.Iteratable, child_storage)).ToMarbleData(node.Iteratable.Position);
         switch (Iteratable.type) {
             case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.FLOAT:
@@ -1292,48 +1331,18 @@ public class Interpreter {
         return new FlowController(FlowController.TYPE.DONE);
     }
     private async Task<FlowController> InterpreteConstructorNode(ConstructorNode node, ContextualStorage storage) {
-        if (storage.HasFunction("Constructor!")) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Position);
-        StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VOID, node.StaticModifier != null, node.UnlimitedArguments, node.Arguments, node.Instructions);
+        StorageFunction.Constructor storage_constructor = new StorageFunction.Constructor(StorageEntity.ACCESSMODE.NONE, node.UnlimitedArguments, node.Arguments, node.BaseParameters, node.Instructions);
         if (node.AccessModeModifier != null) {
             switch (node.AccessModeModifier.Keyword) {
                 case KeywordToken.KEYWORD.PRIVATE:
-                    storage_function.AccessMode = StorageEntity.ACCESSMODE.PRIVATE;
+                    storage_constructor.AccessMode = StorageEntity.ACCESSMODE.PRIVATE;
                     break;
                 case KeywordToken.KEYWORD.PUBLIC:
-                    storage_function.AccessMode = StorageEntity.ACCESSMODE.PUBLIC;
+                    storage_constructor.AccessMode = StorageEntity.ACCESSMODE.PUBLIC;
                     break;
             }
         }
-        if (node.Datatype is KeywordNode) {
-            switch ((node.Datatype as KeywordNode).Keyword) {
-                case KeywordToken.KEYWORD.VARIANT:
-                    storage_function.Datatype = StorageEntity.DATATYPE.VARIANT;
-                    break;
-                case KeywordToken.KEYWORD.BOOLEAN:
-                    storage_function.Datatype = StorageEntity.DATATYPE.BOOLEAN;
-                    break;
-                case KeywordToken.KEYWORD.INTEGER:
-                    storage_function.Datatype = StorageEntity.DATATYPE.INTEGER;
-                    break;
-                case KeywordToken.KEYWORD.FLOAT:
-                    storage_function.Datatype = StorageEntity.DATATYPE.FLOAT;
-                    break;
-                case KeywordToken.KEYWORD.STRING:
-                    storage_function.Datatype = StorageEntity.DATATYPE.STRING;
-                    break;
-                case KeywordToken.KEYWORD.LIST:
-                    storage_function.Datatype = StorageEntity.DATATYPE.LIST;
-                    break;
-                case KeywordToken.KEYWORD.DICTIONARY:
-                    storage_function.Datatype = StorageEntity.DATATYPE.DICTIONARY;
-                    break;
-            }
-        } else {
-            storage_function.Datatype = StorageEntity.DATATYPE.USER_DEFINED;
-            //StorageClass storage_class = (await InterpreteNode(node.Datatype, storage)).IsStorageClass(node.Datatype.Position);
-            //storage_function.Class_name = storage_class.Class_name;
-        }
-        storage.CreateFunction("Constructor!", storage_function);
+        storage.CreateConstructor("1", storage_constructor);
         return await Task.Run(() => new FlowController(FlowController.TYPE.DONE));
     }
 }
