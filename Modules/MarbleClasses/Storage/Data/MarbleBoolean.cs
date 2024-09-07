@@ -1,19 +1,15 @@
-public class MarbleBoolean : MarbleType {
-    public static MarbleData Convert(MarbleData operand, TokenPosition position) {
-        switch (operand.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                return new MarbleData(MarbleData.TYPE.BOOLEAN, operand.value);
-            case MarbleData.TYPE.INTEGER:
-                return new MarbleData(MarbleData.TYPE.BOOLEAN, (int) operand.value > 0);
-            case MarbleData.TYPE.FLOAT:
-                return new MarbleData(MarbleData.TYPE.BOOLEAN, (float) operand.value > 0);
-            case MarbleData.TYPE.STRING: {
-                if (bool.TryParse((string) operand.value, out bool value)) return new MarbleData(MarbleData.TYPE.BOOLEAN, value);
-                break;
-            }
-            case MarbleData.TYPE.LIST: case MarbleData.TYPE.DICTIONARY:
-                break;
-        }
-        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
+public class MarbleBoolean : MarbleData {
+    public bool value;
+    public MarbleBoolean(bool value) {
+        this.value = value;
+    }
+    public override MarbleBoolean duplicate() {
+        return new MarbleBoolean(value);
+    }
+    public override void set_value(object value) {
+        if (value is bool) this.value = (bool) value;
+    }
+    public override object get_value() {
+        return value;
     }
 }

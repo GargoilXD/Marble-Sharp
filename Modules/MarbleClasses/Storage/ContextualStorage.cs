@@ -44,7 +44,8 @@ public class ContextualStorage {
             constructors.Add(KV.Key, KV.Value.Duplicate());
         }
         foreach (KeyValuePair<string, StorageClass> KV in Classes) {
-            classes.Add(KV.Key, KV.Value.Duplicate());
+            if (KV.Value.Storage == this) classes.Add(KV.Key, KV.Value);
+            else classes.Add(KV.Key, KV.Value.Duplicate());
         }
         ContextualStorage parent = null;
         if (Parent != null) parent = Parent.Duplicate();

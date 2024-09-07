@@ -5,33 +5,37 @@ using System.Threading.Tasks;
 public class Interpreter {
     public static InputGetter Input_dialog;
     public string Output = "";
-    public async Task<InterpreterOutput> Interprete(List<Node> nodes, ContextualStorage storage) {
-        foreach (Node node in nodes) await InterpreteNode(node, storage);
+    public async Task<InterpreterOutput> Interprete(List<Node> nodes, ContextualStorage main_context) {
+        foreach (Node node in nodes) await InterpreteNode(node, main_context);
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<InterpreterOutput> InterpreteNode(Node node, ContextualStorage storage) => node switch {
+    private async Task<InterpreterOutput> InterpreteNode(Node node, ContextualStorage main_context) => node switch {
         InlineFunctionDefinitionNode switch_node => await InterpreteInlineFunctionDefinitionNode(switch_node),
-        VariableDefinitionNode switch_node => await InterpreteVariableDefinitionNode(switch_node, storage),
-        ClassDefinitionNode switch_node => await InterpreteClassDefinitionNode(switch_node, storage),
-        FunctionDefinitionNode switch_node => await InterpreteFunctionDefinitionNode(switch_node, storage),
-        FunctionArgumentNode switch_node => await InterpreteFunctionArgumentNode(switch_node, storage),
-        ConstructorNode switch_node => await InterpreteConstructorNode(switch_node, storage),
-        BinaryOperatorNode switch_node => await InterpreteBinaryOperatorNode(switch_node, storage),
-        UnaryOperatorNode switch_node => await InterpreteUnaryOperatorNode(switch_node, storage),
+        VariableDefinitionNode switch_node => await InterpreteVariableDefinitionNode(switch_node, main_context),
+        ClassDefinitionNode switch_node => await InterpreteClassDefinitionNode(switch_node, main_context),
+        FunctionDefinitionNode switch_node => await InterpreteFunctionDefinitionNode(switch_node, main_context),
+        FunctionArgumentNode switch_node => await InterpreteFunctionArgumentNode(switch_node, main_context),
+        ConstructorNode switch_node => await InterpreteConstructorNode(switch_node, main_context),
+        BinaryOperatorNode switch_node => await InterpreteBinaryOperatorNode(switch_node, main_context),
+        UnaryOperatorNode switch_node => await InterpreteUnaryOperatorNode(switch_node, main_context),
         
-        DataNode switch_node => await InterpreteDataNode(switch_node, storage),
+        DataNode switch_node => await InterpreteDataNode(switch_node, main_context),
 
-        FlowControlNode switch_node => await InterpreteFlowControlNode(switch_node, storage),
-        WhileNode switch_node => await InterpreteWhileNode(switch_node, storage),
-        ForNode switch_node => await InterpreteForNode(switch_node, storage),
-        IFNode switch_node => await InterpreteIFNode(switch_node, storage),
-        FunctionParameterNode switch_node => await InterpreteFunctionParameterNode(switch_node, storage),
+        FlowControlNode switch_node => await InterpreteFlowControlNode(switch_node, main_context),
+        WhileNode switch_node => await InterpreteWhileNode(switch_node, main_context),
+        ForNode switch_node => await InterpreteForNode(switch_node, main_context),
+        IFNode switch_node => await InterpreteIFNode(switch_node, main_context),
+        FunctionParameterNode switch_node => await InterpreteFunctionParameterNode(switch_node, main_context),
         _ => throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position, "new node?")
     };
     
-    private async Task<StorageVariable> InterpreteFunctionArgumentNode(FunctionArgumentNode node, ContextualStorage storage) {
-        if (storage.HasVariable(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
+    private async Task<StorageVariable> InterpreteFunctionArgumentNode(FunctionArgumentNode node, ContextualStorage main_context) {
+        if (main_context.HasVariable(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
         StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VOID, false, false, null);
+        MarbleData data = null;
+        if (node.Value != null) {
+            data = (await InterpreteNode(node.Value, main_context)).ToMarbleData(node.Value.Position);
+        }
         if (node.Datatype is KeywordNode) {
             switch ((node.Datatype as KeywordNode).Keyword) {
                 case KeywordToken.KEYWORD.VARIANT:
@@ -62,61 +66,97 @@ public class Interpreter {
                     storage_variable.Datatype = StorageEntity.DATATYPE.CALLABLE;
                     break;
             }
+            if (data != null) {
+                switch (storage_variable.Datatype) {
+                    case StorageEntity.DATATYPE.VARIANT:
+                        storage_variable.Data = data.duplicate();
+                        break;
+                    case StorageEntity.DATATYPE.BOOLEAN:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.BOOLEAN, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.INTEGER:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.INTEGER, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.FLOAT:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.FLOAT, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.STRING:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.STRING, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.LIST:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.LIST, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.DICTIONARY:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.DICTIONARY, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.CALLABLE:
+                        if (data is MarbleCallable) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                        storage_variable.Data = data.duplicate();
+                        break;
+                }
+            }
         } else {
             storage_variable.Datatype = StorageEntity.DATATYPE.USER_DEFINED;
-            StorageClass storage_class = (await InterpreteNode(node.Datatype, storage)).IsStorageClass(node.Datatype.Position);
+            StorageClass storage_class = (await InterpreteNode(node.Datatype, main_context)).IsStorageClass(node.Datatype.Position);
             storage_variable.Class_name = storage_class.Class_name;
+            if (data != null) {
+                if (data is not MarbleObject) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                if ((data.get_value() as StorageClass).Class_name != storage_class.Class_name) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                storage_variable.Data = data;
+            }
         }
-        storage.CreateVariable(node.Identifier.Data as string, storage_variable);
+        main_context.CreateVariable(node.Identifier.Data as string, storage_variable);
         return storage_variable;
     }
     private async Task<MarbleData> InterpreteInlineFunctionDefinitionNode(InlineFunctionDefinitionNode node) {
         StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VARIANT, false, node.UnlimitedArguments, node.Arguments, node.Instructions);
-        return await Task.Run(() => new MarbleData(MarbleData.TYPE.CALLABLE, storage_function));
+        return await Task.Run(() => new MarbleCallable(storage_function));
     }
-    private async Task<InterpreterOutput> InterpreteFunctionParameterNode(FunctionParameterNode node, ContextualStorage storage) {
+    private async Task<InterpreterOutput> InterpreteFunctionParameterNode(FunctionParameterNode node, ContextualStorage main_context) {
         if (node is FunctionParameterNode.Classified) throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
-        return await InterpreteNode(node.Parameter, storage);
+        return await InterpreteNode(node.Parameter, main_context);
     }
-    private async Task<FlowController> InterpreteInstructionListNode(OperandInstructionNode node, ContextualStorage storage) {
+    private async Task<FlowController> InterpreteInstructionListNode(OperandInstructionNode node, ContextualStorage main_context) {
         if (node.Oneline) {
-            return new FlowController.Return((await InterpreteNode(node.Instructions[0], storage)).ToMarbleData(node.Instructions[0].Position));
+            return new FlowController.Return((await InterpreteNode(node.Instructions[0], main_context)).ToMarbleData(node.Instructions[0].Position));
         } else {
             foreach (Node statement in node.Instructions) {
-                InterpreterOutput result = await InterpreteNode(statement, storage);
+                InterpreterOutput result = await InterpreteNode(statement, main_context);
                 if (result is FlowController && (result as FlowController).Type != FlowController.TYPE.DONE) return result as FlowController;
             }
             return new FlowController(FlowController.TYPE.DONE);
         }
     }
-    private async Task<InterpreterOutput> RunFunction(StorageFunction function, List<Node> parameters, BinaryOperatorNode function_node, ContextualStorage storage, ContextualStorage child_storage) {
+    private async Task<InterpreterOutput> RunFunction(StorageFunction function, List<Node> parameters, ContextualStorage main_context, ContextualStorage function_context, TokenPosition position) {
         if (function.UnlimitedArguments) {
-            if (storage.HasVariable((function.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, function.Arguments[0].Position);
+            if (main_context.HasVariable((function.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, function.Arguments[0].Position);
             List<MarbleData> unlimited = new List<MarbleData>();
             for (int x = 0; x < parameters.Count; x++) {
-                unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+                unlimited.Add((await InterpreteNode(parameters[x], main_context)).ToMarbleData(parameters[x].Position));
             }
-            child_storage.CreateVariable((function.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+            function_context.CreateVariable((function.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleList(unlimited)));
         } else {
-            if (parameters.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function_node.Right.Position, "Different number of parameters");
+            if (parameters.Count != function.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, position, "Different number of parameters");
             for (int x = 0; x < function.Arguments.Count; x++) {
-                await AssignOperation(function.Arguments[x], (await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position), child_storage);
+                await AssignOperation(function.Arguments[x], (await InterpreteNode(parameters[x], main_context)).ToMarbleData(parameters[x].Position), function_context);
             }
         }
-        child_storage.CreateVariable("RETURN!", new StorageVariable(StorageEntity.ACCESSMODE.PRIVATE, function.Datatype, false,  false, null));
-        FlowController output = await InterpreteInstructionListNode(function.Instructions, child_storage);
+        StorageVariable come_back = new StorageVariable(StorageEntity.ACCESSMODE.PRIVATE, function.Datatype, false,  false, null);
+        if (function.Datatype == StorageEntity.DATATYPE.USER_DEFINED) come_back.Class_name = function.Class_name;
+        function_context.CreateVariable("RETURN!", come_back);
+        FlowController output = await InterpreteInstructionListNode(function.Instructions, function_context);
         switch (output.Type) {
             case FlowController.TYPE.RETURN:
                 return (output as FlowController.Return).Data;
             case FlowController.TYPE.DONE:
-                if (function.Datatype != StorageEntity.DATATYPE.VOID) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function_node.Left.Position, "No return statement");
+                if (function.Datatype != StorageEntity.DATATYPE.VOID) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, position, "No return statement");
                 return output;
             default:
-                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function_node.Left.Position, "Check function output");
+                throw new InterpreterError(InterpreterError.TYPE.MESSAGE, position, "Check function output");
         }
     }
-    private async Task<InterpreterOutput> DotOperation(BinaryOperatorNode node, ContextualStorage storage) {
-        InterpreterOutput Left = await InterpreteNode(node.Left, storage);
+    private async Task<InterpreterOutput> DotOperation(BinaryOperatorNode node, ContextualStorage main_context) {
+        InterpreterOutput Left = await InterpreteNode(node.Left, main_context);
         switch (Left) {
             case StorageFunction function:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
@@ -129,7 +169,7 @@ public class Interpreter {
                         StorageFunction storage_function = storage_class.Storage.GetFunction(identifier.Data as string);
                         if (!storage_function.IsStatic) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, identifier.Position, "non static");
                         if (storage_function.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_FUNCTION, function.Position);
-                        return await RunFunction(storage_function, parameters, function, storage, storage_class.Storage.CreateChild());
+                        return await RunFunction(storage_function, parameters, main_context, storage_class.Storage.CreateChild(), function.Position);
                     }
                     case DataNode identifier: {
                         if (!storage_class.Storage.GetEntity(identifier.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, identifier.Position);
@@ -145,32 +185,39 @@ public class Interpreter {
                 MarbleData data = Left.ToMarbleData(node.Position);
                 switch (node.Right) {
                     case BinaryOperatorNode function: {
+                        /*ACCESSORS?*/
                         DataNode identifier = function.Left as DataNode;
                         List<Node> parameters = (function.Right as DataNode).Data as List<Node>;
-                        switch (data.type) {
-                            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.DICTIONARY:
+                        switch (data) {
+                            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleDictionary:
                                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
-                            case MarbleData.TYPE.STRING:
+                            case MarbleString:
                                 switch (identifier.Data as string) {
                                     case "has":
                                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        return InOperation((await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
+                                        return InOperation((await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
                                 }
-                            case MarbleData.TYPE.LIST: {
+                            case MarbleList list: {
                                 switch (identifier.Data as string) {
                                     case "append":
                                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        MarbleData new_element = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
-                                        (data.value as List<MarbleData>).Add(new_element);
+                                        MarbleData new_element = (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position);
+                                        list.value.Add(new_element);
+                                        break;
+                                    case "remove":
+                                        if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                        MarbleData point = (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position);
+                                        if (point is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[0].Position);
+                                        list.value.RemoveAt((int) point.get_value());
                                         break;
                                     case "has":
                                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        return InOperation((await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
+                                        return InOperation((await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
                                     case "clear":
                                         if (parameters.Count > 0) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
-                                        (data.value as List<MarbleData>).Clear();
+                                        list.value.Clear();
                                         return new FlowController(FlowController.TYPE.DONE);
 
                                     default:
@@ -178,36 +225,36 @@ public class Interpreter {
                                 }
                                 return null;
                             }
-                            case MarbleData.TYPE.OBJECT: {
-                                if (!data.as_object().Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
-                                StorageFunction storage_function = data.as_object().Storage.GetFunction(identifier.Data as string);
+                            case MarbleObject marble_object: {
+                                if (!marble_object.value.Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
+                                StorageFunction storage_function = marble_object.value.Storage.GetFunction(identifier.Data as string);
                                 if (storage_function.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_FUNCTION, function.Position);
-                                return await RunFunction(storage_function, parameters, function, storage, data.as_object().Storage.CreateChild());
+                                return await RunFunction(storage_function, parameters, main_context, marble_object.value.Storage.CreateChild(), function.Position);
                             }
                             default:
                                 return null;
                         }
                     }
                     case DataNode identifier: {
-                        switch (data.type) {
-                            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.DICTIONARY:
+                        switch (data) {
+                            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleDictionary:
                                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
-                            case MarbleData.TYPE.STRING:
+                            case MarbleString marble_string:
                                 switch(identifier.Data) {
                                     case "size":
-                                        return new MarbleData(MarbleData.TYPE.INTEGER, data.as_string().Length);
+                                        return new MarbleInteger(marble_string.value.Length);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, identifier.Position, "undefined");
                                 }
-                            case MarbleData.TYPE.LIST:
+                            case MarbleList list:
                                 switch(identifier.Data) {
                                     case "size":
-                                        return new MarbleData(MarbleData.TYPE.INTEGER, data.as_list().Count);
+                                        return new MarbleInteger(list.value.Count);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, identifier.Position, "undefined");
                                 }
-                            case MarbleData.TYPE.OBJECT: {
-                                if (!data.as_object().Storage.GetEntity(identifier.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, identifier.Position);
+                            case MarbleObject marble_object: {
+                                if (!marble_object.value.Storage.GetEntity(identifier.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, identifier.Position);
                                 if (storage_entity.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_VARIABLE, identifier.Position);
                                 return storage_entity;
                             }
@@ -222,36 +269,7 @@ public class Interpreter {
                 return null;
         }
     }
-    private async Task<MarbleData> MarbleDataToString(MarbleData data, ContextualStorage storage, TokenPosition position) {
-        switch (data.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                return new MarbleData(MarbleData.TYPE.STRING, $"{data.value}");
-            case MarbleData.TYPE.STRING:
-                return data;
-            case MarbleData.TYPE.LIST:
-                string output = "[";
-                foreach (MarbleData element in data.as_list()) {
-                    output += (await MarbleDataToString(element, storage, position)).value + ", ";
-                }
-                output = output.Remove(output.Length - 2);
-                output += "]";
-                return new MarbleData(MarbleData.TYPE.STRING, output);
-            case MarbleData.TYPE.DICTIONARY:
-                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, position);
-            case MarbleData.TYPE.CALLABLE:
-                return new MarbleData(MarbleData.TYPE.STRING, "<Callable>");
-            case MarbleData.TYPE.OBJECT:
-                if (data.as_object().Storage.HasFunction("to_string")) {
-                    StorageFunction function = data.as_object().Storage.GetFunction("to_string");
-                    return (await RunFunction(function, function.Arguments, null, storage, data.as_object().Storage.CreateChild())).ToMarbleData(position);
-                } else {
-                    return new MarbleData(MarbleData.TYPE.STRING, "<Object>");
-                }
-            default:
-                return null;
-        }
-    }
-    private async Task<InterpreterOutput> CallerOperation(BinaryOperatorNode node, ContextualStorage storage) {
+    private async Task<InterpreterOutput> CallerOperation(BinaryOperatorNode node, ContextualStorage main_context) {
         List<Node> parameters = (node.Right as DataNode).Data as List<Node>;
         switch (node.Left) {
             case KeywordNode keyword_node: {
@@ -261,49 +279,44 @@ public class Interpreter {
                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
                     case KeywordToken.KEYWORD.ASSERT: {
                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
-                        MarbleData assertion = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
-                        if (assertion.type != MarbleData.TYPE.BOOLEAN) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Expected boolean");
-                        if (!assertion.as_boolean()) throw new InterpreterError(InterpreterError.TYPE.ASSERTION_FAILED, node.Right.Position);
+                        MarbleBoolean assertion = (await ConvertOperation(MarbleData.TYPE.BOOLEAN, (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), parameters[0].Position)) as MarbleBoolean;
+                        if (!assertion.value) throw new InterpreterError(InterpreterError.TYPE.ASSERTION_FAILED, node.Right.Position);
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.PRINT: {
                         foreach (Node parameter in parameters) {
-                            Output += $"{(await MarbleDataToString((await InterpreteNode(parameter, storage)).ToMarbleData(parameter.Position), storage, parameter.Position)).value} ";
+                            Output += $"{(await ConvertOperation(MarbleData.TYPE.STRING, (await InterpreteNode(parameter, main_context)).ToMarbleData(parameter.Position), parameter.Position)).get_value()} ";
                         }
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.PRINTLINE: {
                         foreach (Node parameter in parameters) {
-                            Output += $"{(await MarbleDataToString((await InterpreteNode(parameter, storage)).ToMarbleData(parameter.Position), storage, parameter.Position)).value} ";
+                            Output += $"{(await ConvertOperation(MarbleData.TYPE.STRING, (await InterpreteNode(parameter, main_context)).ToMarbleData(parameter.Position), parameter.Position)).get_value()} ";
                         }
                         Output += '\n';
                         return new FlowController(FlowController.TYPE.DONE);
                     }
                     case KeywordToken.KEYWORD.RANGE: {
                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        MarbleData data = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
-                        if (data.type != MarbleData.TYPE.INTEGER)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Position);
+                        MarbleInteger integer = (await ConvertOperation(MarbleData.TYPE.INTEGER, (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), parameters[0].Position)) as MarbleInteger;
                         List<MarbleData> elements = new List<MarbleData>();
-                        for (int x = 0; x < (int) data.value; x++) {
-                            elements.Add(new MarbleData(MarbleData.TYPE.INTEGER, x));
+                        for (int x = 0; x < integer.value; x++) {
+                            elements.Add(new MarbleInteger(x));
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, elements);
+                        return new MarbleList(elements);
                     }
                     case KeywordToken.KEYWORD.RANDOM: {
                         if (parameters.Count > 2) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        MarbleData left = (await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position);
-                        if (left.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[0].Position);
-                        MarbleData right = (await InterpreteNode(parameters[1], storage)).ToMarbleData(parameters[1].Position);
-                        if (right.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[1].Position);
-                        int random_number = new Random().Next(left.as_integer(), right.as_integer());
-                        return new  MarbleData(MarbleData.TYPE.INTEGER, random_number);
+                        MarbleInteger left = (await ConvertOperation(MarbleData.TYPE.INTEGER, (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), parameters[0].Position)) as MarbleInteger;
+                        MarbleInteger right = (await ConvertOperation(MarbleData.TYPE.INTEGER, (await InterpreteNode(parameters[1], main_context)).ToMarbleData(parameters[1].Position), parameters[1].Position)) as MarbleInteger;
+                        return new MarbleInteger(new Random().Next(left.value, right.value));
                     }
                     case KeywordToken.KEYWORD.INPUT: {
                         if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Too many parameters");
-                        Input_dialog.DialogText = $"{(await InterpreteNode(parameters[0], storage)).ToMarbleData(parameters[0].Position)}";
+                        Input_dialog.DialogText = $"{(await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position)}";
                         Input_dialog.Show();
                         await Input_dialog.ToSignal(Input_dialog, "confirmed");
-                        return new MarbleData(MarbleData.TYPE.STRING, Input_dialog.Input);
+                        return new MarbleString(Input_dialog.Input);
                     }
                     default:
                         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
@@ -312,31 +325,31 @@ public class Interpreter {
             case DataNode data_node:
                 switch (data_node.Type) {
                     case DataNode.TYPE.IDENTIFIER:
-                        if (storage.HasFunction(data_node.Data as string)) {
-                            return await RunFunction(storage.GetFunction(data_node.Data as string), parameters, node, storage, storage.CreateChild());
-                        } else if (storage.HasVariable(data_node.Data as string)) {
-                            StorageVariable variable = storage.GetVariable(data_node.Data as string);
+                        if (main_context.HasFunction(data_node.Data as string)) {
+                            return await RunFunction(main_context.GetFunction(data_node.Data as string), parameters, main_context, main_context.CreateChild(), node.Position);
+                        } else if (main_context.HasVariable(data_node.Data as string)) {
+                            StorageVariable variable = main_context.GetVariable(data_node.Data as string);
                             if (variable.Datatype != StorageEntity.DATATYPE.CALLABLE) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, data_node.Position);
-                            return await RunFunction(variable.Data.as_callable(), parameters, null, storage, storage.CreateChild());
-                        } else if (storage.HasClass(data_node.Data as string)) {
-                            StorageClass storage_class = storage.GetClass(data_node.Data as string);
+                            return await RunFunction(variable.Data.get_value() as StorageFunction, parameters, main_context, main_context.CreateChild(), null);
+                        } else if (main_context.HasClass(data_node.Data as string)) {
+                            StorageClass storage_class = main_context.GetClass(data_node.Data as string);
                             ContextualStorage child_storage = storage_class.Storage.CreateChild();
                             StorageFunction.Constructor constructor = storage_class.Storage.GetConstructor("1");
                             if (constructor == null) {
-                                return new MarbleData(MarbleData.TYPE.OBJECT, storage_class);
+                                return new MarbleObject(storage_class);
                             }
                             ContextualStorage parameter_child_storage = child_storage.CreateChild();
                             if (constructor.UnlimitedArguments) {
-                                if (storage.HasVariable((constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, constructor.Arguments[0].Position);
+                                if (main_context.HasVariable((constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, constructor.Arguments[0].Position);
                                 List<MarbleData> unlimited = new List<MarbleData>();
                                 for (int x = 0; x < parameters.Count; x++) {
-                                    unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+                                    unlimited.Add((await InterpreteNode(parameters[x], main_context)).ToMarbleData(parameters[x].Position));
                                 }
-                                parameter_child_storage.CreateVariable((constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+                                parameter_child_storage.CreateVariable((constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleList(unlimited)));
                             } else {
                                 if (parameters.Count != constructor.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
                                 for (int x = 0; x < constructor.Arguments.Count; x++) {
-                                    await AssignOperation(constructor.Arguments[x], (await InterpreteNode(parameters[x], storage)).ToMarbleData(node.Right.Position), parameter_child_storage);
+                                    await AssignOperation(constructor.Arguments[x], (await InterpreteNode(parameters[x], main_context)).ToMarbleData(node.Right.Position), parameter_child_storage);
                                 }
                             }
                             if (constructor.BaseParameters != null && constructor.BaseParameters.Count != 0) {
@@ -344,12 +357,12 @@ public class Interpreter {
                                 if (!storage_class.Storage.Parent.HasConstructor("1")) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, constructor.BaseParameters[0].Position, "parent has no constructor");
                                 StorageFunction.Constructor base_constructor = storage_class.Storage.Parent.GetConstructor("1");
                                 if (base_constructor.UnlimitedArguments) {
-                                    if (storage.HasVariable((base_constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, base_constructor.Arguments[0].Position);
+                                    if (main_context.HasVariable((base_constructor.Arguments[0] as DataNode).Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, base_constructor.Arguments[0].Position);
                                     List<MarbleData> unlimited = new List<MarbleData>();
                                     for (int x = 0; x < parameters.Count; x++) {
-                                        unlimited.Add((await InterpreteNode(parameters[x], storage)).ToMarbleData(parameters[x].Position));
+                                        unlimited.Add((await InterpreteNode(parameters[x], main_context)).ToMarbleData(parameters[x].Position));
                                     }
-                                    child_storage.CreateVariable((base_constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleData(MarbleData.TYPE.LIST, unlimited)));
+                                    child_storage.CreateVariable((base_constructor.Arguments[0] as DataNode).Data as string, new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.LIST, false, false, new MarbleList(unlimited)));
                                 } else {
                                     if (constructor.BaseParameters.Count != base_constructor.Arguments.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Different number of parameters");
                                     for (int x = 0; x < base_constructor.Arguments.Count; x++) {
@@ -359,619 +372,825 @@ public class Interpreter {
                                 await InterpreteInstructionListNode(base_constructor.Instructions, child_storage);
                             }
                             await InterpreteInstructionListNode(constructor.Instructions, parameter_child_storage);
-                            return new MarbleData(MarbleData.TYPE.OBJECT, storage_class);
+                            return new MarbleObject(storage_class);
                         }
                         throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
                     default:
                         return null;
                 }
             case BinaryOperatorNode binary: {
-                StorageFunction function = (await InterpreteBinaryOperatorNode(binary, storage)).IsStorageFunction(binary.Position);
-                return await RunFunction(function, parameters, binary, storage, storage.CreateChild());
+                StorageFunction function = (await InterpreteBinaryOperatorNode(binary, main_context)).IsStorageFunction(binary.Position);
+                return await RunFunction(function, parameters, main_context, main_context.CreateChild(), binary.Position);
             }
             default:
                 return null;
         }
     }
-    private async Task<InterpreterOutput> AccessorOperation(BinaryOperatorNode node, ContextualStorage storage) {
-        MarbleData Left = (await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position);
-        List<MarbleData> Elements = (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position).as_list();
-        switch (Left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.DICTIONARY: case MarbleData.TYPE.OBJECT:
+    private async Task<InterpreterOutput> AccessorOperation(BinaryOperatorNode node, ContextualStorage main_context) {
+        MarbleData Left = (await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position);
+        List<MarbleData> parameters = ((await ConvertOperation(MarbleData.TYPE.LIST, (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Right.Position)) as MarbleList).value;
+        switch (Left) {
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleDictionary: case MarbleObject:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Left.Position);
-            case MarbleData.TYPE.STRING: {
-                if (Elements.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
-                MarbleData index = Elements[0];
-                if (index.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
-                int value = index.as_integer(node.Right.Position);
-                if (value >= Left.as_string().Length) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
-                return new MarbleData(MarbleData.TYPE.INTEGER, Left.as_string()[value] + "");
+            case MarbleString marble_string: {
+                if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                MarbleData index = parameters[0];
+                if (index is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
+                int value = (int) index.get_value();
+                if (value >= marble_string.value.Length) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
+                return new MarbleString(marble_string.value[value] + "");
             }
-            case MarbleData.TYPE.LIST: {
-                if (Elements.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
-                MarbleData index = Elements[0];
-                if (index.type != MarbleData.TYPE.INTEGER) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
-                if (index.as_integer() >= Left.as_list().Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
-                return Left.as_list()[index.as_integer()];
+            case MarbleList list: {
+                if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Too many parameters");
+                MarbleData index = parameters[0];
+                if (index is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Right.Position);
+                int value = (int) index.get_value();
+                if (value >= list.value.Count) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Right.Position, "Out of range");
+                return list.value[value];
             }
             default:
                 return null;
         }
-
     }
-    private async Task<StorageVariable> AssignOperation(Node left, MarbleData data, ContextualStorage storage) {
-        InterpreterOutput output = await InterpreteNode(left, storage);
+    private async Task<StorageVariable> AssignOperation(Node left, MarbleData data, ContextualStorage main_context) {
+        InterpreterOutput output = await InterpreteNode(left, main_context);
         if (output is not StorageVariable) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, left.Position);
         StorageVariable storage_variable = output as StorageVariable;
         if (storage_variable.IsConstant && storage_variable.Data != null) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, left.Position, "This variable is constant");
-        storage_variable.assign(data, left.Position);
+        switch (storage_variable.Datatype) {
+            case StorageEntity.DATATYPE.VARIANT:
+                storage_variable.Data = data.duplicate();
+                break;
+            case StorageEntity.DATATYPE.BOOLEAN:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.BOOLEAN, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.INTEGER:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.INTEGER, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.FLOAT:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.FLOAT, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.STRING:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.STRING, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.LIST:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.LIST, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.DICTIONARY:
+                storage_variable.Data = await ConvertOperation(MarbleData.TYPE.DICTIONARY, data, left.Position);
+                break;
+            case StorageEntity.DATATYPE.CALLABLE:
+                if (data is MarbleCallable) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, left.Position);
+                storage_variable.Data = data.duplicate();
+                break;
+            case StorageEntity.DATATYPE.USER_DEFINED:
+                if (data is not MarbleObject) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, left.Position);
+                if ((data as MarbleObject).value.Class_name != storage_variable.Class_name)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, left.Position);
+                storage_variable.Data = data.duplicate();
+                break;
+        }
         return storage_variable;
     }
-    private async Task<MarbleData> AddOperation(MarbleData left, MarbleData right, ContextualStorage storage, TokenPosition position) {
-        switch (left.type) {
+    private async Task<MarbleData> ConvertOperation(MarbleData.TYPE type, MarbleData operand, TokenPosition position) {
+        switch (type) {
             case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
-                    case MarbleData.TYPE.LIST: {
-                        MarbleData copy = right.duplicate();
-                        (copy.value as List<MarbleData>).Insert(0, left.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
-                    }
+                switch (operand) {
+                    case MarbleBoolean:
+                        return operand.duplicate();
+                    case MarbleInteger data:
+                        return new MarbleBoolean(data.value > 0);
+                    case MarbleFloat data:
+                        return new MarbleBoolean(data.value > 0);
+                    case MarbleString data:
+                        return new MarbleBoolean(bool.Parse(data.value));
+                    case MarbleList data:
+                        return new MarbleBoolean(data != null);
+                    case MarbleDictionary data:
+                        return new MarbleBoolean(data != null);
+                    case MarbleCallable data:
+                        return new MarbleBoolean(data != null);
+                    case MarbleObject data:
+                        return new MarbleBoolean(data != null);
                 }
                 break;
             case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
-                    case MarbleData.TYPE.LIST: {
-                        MarbleData copy = right.duplicate();
-                        (copy.value as List<MarbleData>).Insert(0, left.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
-                    }
-                };
+                switch (operand) {
+                    case MarbleBoolean data:
+                        return new MarbleInteger(data.value? 1 : 0);
+                    case MarbleInteger data:
+                        return data.duplicate();
+                    case MarbleFloat data:
+                        return new MarbleInteger((int) data.value);
+                    case MarbleString data:
+                        return new MarbleInteger(int.Parse(data.value));
+                }
                 break;
             case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (int) right.value);
-                    case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, left.as_float() + right.as_integer());
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
-                    case MarbleData.TYPE.LIST: {
-                        MarbleData copy = right.duplicate();
-                        (copy.value as List<MarbleData>).Insert(0, left.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
-                    }
-                };
+                switch (operand) {
+                    case MarbleBoolean data:
+                        return new MarbleFloat(data.value? 1 : 0);
+                    case MarbleInteger data:
+                        return new MarbleFloat(data.value);
+                    case MarbleFloat data:
+                        return data.duplicate();
+                    case MarbleString data:
+                        return new MarbleFloat(float.Parse(data.value));
+                }
                 break;
             case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
-                    case MarbleData.TYPE.LIST: {
-                        MarbleData copy = right.duplicate();
-                        (copy.value as List<MarbleData>).Insert(0, left.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
-                    }
-                };
+                switch (operand) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleFloat:
+                        return new MarbleString($"{operand.get_value()}");
+                    case MarbleString:
+                        return operand.duplicate();
+                    case MarbleList data:
+                        string output = "[";
+                        foreach (MarbleData element in data.value) {
+                            output += (await ConvertOperation(MarbleData.TYPE.STRING, element, position)).get_value() + ", ";
+                        }
+                        output = output.Remove(output.Length - 2);
+                        output += "]";
+                        return new MarbleString(output);
+                    case MarbleDictionary:
+                        return new MarbleString("<Dictionary>");
+                    case MarbleCallable:
+                        return new MarbleString("<Callable>");
+                    case MarbleObject data:
+                        if (data.value.Storage.HasFunction("to_string")) {
+                            StorageFunction function = data.value.Storage.GetFunction("to_string");
+                            ContextualStorage main_context = data.value.Storage.CreateChild();
+                            return (await RunFunction(function, new List<Node>(), main_context, main_context, function.Position)).ToMarbleData(position);
+                        } else {
+                            return new MarbleString("<Object>");
+                        }
+                }
                 break;
             case MarbleData.TYPE.LIST:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.STRING: {
-                        MarbleData copy = right.duplicate();
-                        (copy.value as List<MarbleData>).Insert(0, left.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
+                switch (operand) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleFloat:
+                        return new MarbleList(new List<MarbleData>(){ operand.duplicate() });
+                    case MarbleString right_string:
+                        MarbleList list = new MarbleList(new List<MarbleData>());
+                        foreach (char element in right_string.value) {
+                            list.value.Add(new MarbleString(element + ""));
+                        }
+                        return list;
+                    case MarbleList:
+                        return operand.duplicate();
+                }
+                break;
+            case MarbleData.TYPE.DICTIONARY:
+            case MarbleData.TYPE.CALLABLE:
+            case MarbleData.TYPE.OBJECT:
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
+    }
+    private async Task<MarbleData> AddOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger((left_boolean.value? 1 : 0) + right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat((left_boolean.value? 1 : 0) + right_float.value);
+                    case MarbleString right_string:
+                        return new MarbleString($"{left_boolean.value}{right_string}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_boolean.duplicate());
+                        return copy;
                     }
-                    case MarbleData.TYPE.LIST: {
-                        MarbleData copy = right.duplicate();
-                        foreach (MarbleData element in left.value as List<MarbleData>) (copy.value as List<MarbleData>).Add(element.duplicate());
-                        return new MarbleData(MarbleData.TYPE.LIST, copy);
+                }
+                break;
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleInteger(left_integer.value + (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value + right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_integer.value + right_float.value);
+                    case MarbleString right_string:
+                        return new MarbleString($"{left_integer.value}{right_string}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_integer.duplicate());
+                        return copy;
+                    }
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleFloat(left_float.value + (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleFloat(left_float.value + right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_float.value + right_float.value);
+                    case MarbleString right_string:
+                        return new MarbleString($"{left_float.value}{right_string}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left.duplicate());
+                        return copy;
                     }
                 };
                 break;
-            case MarbleData.TYPE.DICTIONARY:
-                if (right.type == MarbleData.TYPE.STRING) return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
+            case MarbleString left_string:
+                switch (right) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleString:
+                        return new MarbleString($"{left_string.value}{right.get_value()}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_string.duplicate());
+                        return copy;
+                    }
+                    case MarbleCallable: case MarbleObject:
+                        return new MarbleString($"{left_string.value}{await ConvertOperation(MarbleData.TYPE.STRING, right, position)}");
+                };
                 break;
-            case MarbleData.TYPE.CALLABLE:
-                if (right.type == MarbleData.TYPE.STRING) return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
+            case MarbleList left_list:
+                switch (right) {
+                    case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString: {
+                        MarbleList copy = left_list.duplicate();
+                        copy.value.Add(right.duplicate());
+                        return copy;
+                    }
+                    case MarbleList right_list: {
+                        MarbleList copy = left_list.duplicate();
+                        foreach (MarbleData element in right_list.value) copy.value.Add(element.duplicate());
+                        return copy;
+                    }
+                };
                 break;
-            case MarbleData.TYPE.OBJECT:
-                if (right.type == MarbleData.TYPE.STRING) return new MarbleData(MarbleData.TYPE.STRING, $"{(await MarbleDataToString(left, storage, position)).value}{(await MarbleDataToString(right, storage, position)).value}");
+            case MarbleDictionary left_dictionary:
+                switch (right) {
+                    case MarbleString right_string:
+                        return new MarbleString($"{await ConvertOperation(MarbleData.TYPE.STRING, left_dictionary, position)}{right_string.value}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_dictionary.duplicate());
+                        return copy;
+                    }
+                }
+                break;
+            case MarbleCallable left_callable:
+                switch (right) {
+                    case MarbleString right_string:
+                        return new MarbleString($"{await ConvertOperation(MarbleData.TYPE.STRING, left_callable, position)}{right_string.value}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_callable.duplicate());
+                        return copy;
+                    }
+                }
+                break;
+            case MarbleObject left_object:
+                switch (right) {
+                    case MarbleString right_string:
+                        return new MarbleString($"{await ConvertOperation(MarbleData.TYPE.STRING, left_object, position)}{right_string}");
+                    case MarbleList right_list: {
+                        MarbleList copy = right_list.duplicate();
+                        copy.value.Insert(0, left_object.duplicate());
+                        return copy;
+                    }
+                }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData SubtractOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value - (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value - (float) right.value);
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger((left_boolean.value? 1 : 0) - right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat((left_boolean.value? 1 : 0) - right_float.value);
                 }
                 break;
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value - (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value - (float) right.value);
-                };
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleInteger(left_integer.value - (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value - right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_integer.value - right_float.value);
+                }
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value - (float) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value - (float) right.value);
-                };
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleFloat(left_float.value - (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleFloat(left_float.value - right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_float.value - right_float.value);
+                }
                 break;
-        }
+            };
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData MultiplyOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value * (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value * (float) right.value);
-                    case MarbleData.TYPE.STRING:
-                        string new_string = "";
-                        for (int x = 0; x < (int) right.value; x++) new_string += left.value;
-                        return new MarbleData(MarbleData.TYPE.STRING, new_string);
-                    case MarbleData.TYPE.LIST: {
-                        List<MarbleData> new_list = new List<MarbleData>();
-                        for (int x = 0; x < (int) right.value; x++) new_list.AddRange(left.duplicate().value as List<MarbleData>);
-                        return new MarbleData(MarbleData.TYPE.LIST, new_list);
-                    }
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger((left_boolean.value? 1 : 0) * right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat((left_boolean.value? 1 : 0) * right_float.value);
                 }
                 break;
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.STRING:
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleInteger(left_integer.value * (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value * right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_integer.value * right_float.value);
+                    case MarbleString right_string:
                         string new_string = "";
-                        for (int x = 0; x < (int) right.value; x++) new_string += left.value;
-                        return new MarbleData(MarbleData.TYPE.STRING, new_string);
-                    case MarbleData.TYPE.LIST: {
+                        for (int x = 0; x < left_integer.value; x++) new_string += right_string.value;
+                        return new MarbleString(new_string);
+                    case MarbleList right_list: {
                         List<MarbleData> new_list = new List<MarbleData>();
-                        for (int x = 0; x < (int) right.value; x++) new_list.AddRange(left.duplicate().value as List<MarbleData>);
-                        return new MarbleData(MarbleData.TYPE.LIST, new_list);
+                        for (int x = 0; x < left_integer.value; x++) new_list.Add(right_list.duplicate());
+                        return new MarbleList(new_list);
                     }
                 };
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.STRING:
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleFloat(left_float.value * (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleFloat(left_float.value * right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_float.value * right_float.value);
+                    case MarbleString right_string:
                         string new_string = "";
-                        for (int x = 0; x < (int) right.value; x++) new_string += left.value;
-                        return new MarbleData(MarbleData.TYPE.STRING, new_string);
-                    case MarbleData.TYPE.LIST: {
+                        for (int x = 0; x < (int) left_float.value; x++) new_string += right_string.value;
+                        return new MarbleString(new_string);
+                    case MarbleList right_list: {
                         List<MarbleData> new_list = new List<MarbleData>();
-                        for (int x = 0; x < (int) right.value; x++) new_list.AddRange(left.duplicate().value as List<MarbleData>);
-                        return new MarbleData(MarbleData.TYPE.LIST, new_list);
+                        for (int x = 0; x < (int) left_float.value; x++) new_list.Add(right_list.duplicate());
+                        return new MarbleList(new_list);
                     }
                 };
                 break;
-            case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
+            case MarbleString left_string:
+                switch (right) {
+                    case MarbleInteger: case MarbleFloat:
                         string new_string = "";
-                        for (int x = 0; x < (int) right.convert_to(MarbleData.TYPE.INTEGER, position).value; x++) new_string += left.value;
-                        return new MarbleData(MarbleData.TYPE.STRING, new_string);
+                        for (int x = 0; x < (int) right.get_value(); x++) new_string += left_string.value;
+                        return new MarbleString(new_string);
                 };
                 break;
-            case MarbleData.TYPE.LIST:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
+            case MarbleList left_list:
+                switch (right) {
+                    case MarbleInteger: case MarbleFloat:
                         List<MarbleData> new_list = new List<MarbleData>();
-                        for (int x = 0; x < (int) right.convert_to(MarbleData.TYPE.INTEGER, position).value; x++) new_list.AddRange(left.duplicate().value as List<MarbleData>);
-                        return new MarbleData(MarbleData.TYPE.LIST, new_list);
+                        for (int x = 0; x < (int) right.get_value(); x++) new_list.Add(left_list.duplicate());
+                        return new MarbleList(new_list);
                 };
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData DivideOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        float dividend = (float) right.convert_to(MarbleData.TYPE.FLOAT, position).value;
-        if (dividend == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value / (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value / (float) right.value);
-                }
-                break;
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        if (right_integer.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleInteger(left_integer.value / right_integer.value);
+                    case MarbleFloat right_float:
+                        if (right_float.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleFloat(left_integer.value / right_float.value);
                 };
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, (float) left.value + (float) right.value);
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        if (right_integer.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleFloat(left_float.value / right_integer.value);
+                    case MarbleFloat right_float:
+                        if (right_float.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleFloat(left_float.value / right_float.value);
                 };
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData IntegerDivideOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        int dividend = (int) right.convert_to(MarbleData.TYPE.INTEGER, position).value;
-        if (dividend == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value / (int) right.value);
-                    case MarbleData.TYPE.STRING: {
-                        string right_string = right.value as string;
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        if (right_integer.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleInteger(left_integer.value / right_integer.value);
+                    case MarbleFloat right_float:
+                        if (right_float.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleInteger(left_integer.value / (int) right_float.value);
+                    case MarbleString right_string: {
                         List<MarbleData> sub_strings = new List<MarbleData>();
                         string sub_string = "";
-                        int sub_lenght = right_string.Length / (int) left.value;
-                        for (int x = 0; x < right_string.Length; x++) {
+                        int sub_lenght = right_string.value.Length / left_integer.value;
+                        for (int x = 0; x < right_string.value.Length; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_strings.Add(new MarbleData(MarbleData.TYPE.STRING, sub_string));
+                                sub_strings.Add(new MarbleString(sub_string));
                                 sub_string = "";
                             }
-                            sub_string += right_string[x];
+                            sub_string += right_string.value[x];
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_strings);
+                        return new MarbleList(sub_strings);
                     }
-                    case MarbleData.TYPE.LIST: {
-                        List<MarbleData> right_list = right.value as List<MarbleData>;
+                    case MarbleList right_list: {
                         List<MarbleData> sub_lists = new List<MarbleData>();
                         List<MarbleData> sub_list = new List<MarbleData>();
-                        int sub_lenght = right_list.Count / (int) left.value;
-                        for (int x = 0; x < right_list.Count; x++) {
+                        int sub_lenght = right_list.value.Count / left_integer.value;
+                        for (int x = 0; x < right_list.value.Count; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_lists.Add(new MarbleData(MarbleData.TYPE.LIST, sub_list));
+                                sub_lists.Add(new MarbleList(sub_list));
                                 sub_list = new List<MarbleData>();
                             }
-                            sub_list.Add(right_list[x]);
+                            sub_list.Add(right_list.value[x]);
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_lists);
-                    }
-                }
-                break;
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.STRING: {
-                        string right_string = right.value as string;
-                        List<MarbleData> sub_strings = new List<MarbleData>();
-                        string sub_string = "";
-                        int sub_lenght = right_string.Length / (int) left.value;
-                        for (int x = 0; x < right_string.Length; x++) {
-                            if (x % sub_lenght == 0) {
-                                sub_strings.Add(new MarbleData(MarbleData.TYPE.STRING, sub_string));
-                                sub_string = "";
-                            }
-                            sub_string += right_string[x];
-                        }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_strings);
-                    }
-                    case MarbleData.TYPE.LIST: {
-                        List<MarbleData> right_list = right.value as List<MarbleData>;
-                        List<MarbleData> sub_lists = new List<MarbleData>();
-                        List<MarbleData> sub_list = new List<MarbleData>();
-                        int sub_lenght = right_list.Count / (int) left.value;
-                        for (int x = 0; x < right_list.Count; x++) {
-                            if (x % sub_lenght == 0) {
-                                sub_lists.Add(new MarbleData(MarbleData.TYPE.LIST, sub_list));
-                                sub_list = new List<MarbleData>();
-                            }
-                            sub_list.Add(right_list[x]);
-                        }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_lists);
+                        return new MarbleList(sub_lists);
                     }
                 };
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value + (int) right.value);
-                    case MarbleData.TYPE.STRING: {
-                        string right_string = right.value as string;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        if (right_integer.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleInteger((int) left_float.value / right_integer.value);
+                    case MarbleFloat right_float:
+                        if (right_float.value == 0) throw new InterpreterError(InterpreterError.TYPE.DIVISION_BY_ZERO, position);
+                        return new MarbleInteger( (int) left_float.value / (int) right_float.value);
+                    case MarbleString right_string: {
                         List<MarbleData> sub_strings = new List<MarbleData>();
                         string sub_string = "";
-                        int sub_lenght = right_string.Length / (int) left.value;
-                        for (int x = 0; x < right_string.Length; x++) {
+                        int sub_lenght = right_string.value.Length / (int) left_float.value;
+                        for (int x = 0; x < right_string.value.Length; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_strings.Add(new MarbleData(MarbleData.TYPE.STRING, sub_string));
+                                sub_strings.Add(new MarbleString(sub_string));
                                 sub_string = "";
                             }
-                            sub_string += right_string[x];
+                            sub_string += right_string.value[x];
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_strings);
+                        return new MarbleList(sub_strings);
                     }
-                    case MarbleData.TYPE.LIST: {
-                        List<MarbleData> right_list = right.value as List<MarbleData>;
+                    case MarbleList right_list: {
                         List<MarbleData> sub_lists = new List<MarbleData>();
                         List<MarbleData> sub_list = new List<MarbleData>();
-                        int sub_lenght = right_list.Count / (int) left.value;
-                        for (int x = 0; x < right_list.Count; x++) {
+                        int sub_lenght = right_list.value.Count / (int) left_float.value;
+                        for (int x = 0; x < right_list.value.Count; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_lists.Add(new MarbleData(MarbleData.TYPE.LIST, sub_list));
+                                sub_lists.Add(new MarbleList(sub_list));
                                 sub_list = new List<MarbleData>();
                             }
-                            sub_list.Add(right_list[x]);
+                            sub_list.Add(right_list.value[x]);
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_lists);
+                        return new MarbleList(sub_lists);
                     }
                 };
                 break;
-            case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: {
-                        string left_string = left.value as string;
+            case MarbleString left_string:
+                switch (right) {
+                    case MarbleInteger: case MarbleFloat: {
                         List<MarbleData> sub_strings = new List<MarbleData>();
                         string sub_string = "";
-                        int sub_lenght = left_string.Length / (int) right.value;
-                        for (int x = 0; x < left_string.Length; x++) {
+                        int sub_lenght = left_string.value.Length / (int) right.get_value();
+                        for (int x = 0; x < left_string.value.Length; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_strings.Add(new MarbleData(MarbleData.TYPE.STRING, sub_string));
+                                sub_strings.Add(new MarbleString(sub_string));
                                 sub_string = "";
                             }
-                            sub_string += left_string[x];
+                            sub_string += left_string.value[x];
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_strings);
+                        return new MarbleList(sub_strings);
                     }
                 };
                 break;
-            case MarbleData.TYPE.LIST:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: {
-                        List<MarbleData> left_list = left.value as List<MarbleData>;
+            case MarbleList left_list:
+                switch (right) {
+                    case MarbleInteger: case MarbleFloat: {
                         List<MarbleData> sub_lists = new List<MarbleData>();
                         List<MarbleData> sub_list = new List<MarbleData>();
-                        int sub_lenght = left_list.Count / (int) right.value;
-                        for (int x = 0; x < left_list.Count; x++) {
+                        int sub_lenght = left_list.value.Count / (int) right.get_value();
+                        for (int x = 0; x < left_list.value.Count; x++) {
                             if (x % sub_lenght == 0) {
-                                sub_lists.Add(new MarbleData(MarbleData.TYPE.LIST, sub_list));
+                                sub_lists.Add(new MarbleList(sub_list));
                                 sub_list = new List<MarbleData>();
                             }
-                            sub_list.Add(left_list[x]);
+                            sub_list.Add(left_list.value[x]);
                         }
-                        return new MarbleData(MarbleData.TYPE.LIST, sub_lists);
+                        return new MarbleList(sub_lists);
                     }
                 };
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData ExponentOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT,  Math.Pow((float) left.value, (float) right.value));
+    private MarbleFloat ExponentOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleBoolean right_boolean: 
+                        return new MarbleFloat((float) Math.Pow(left_boolean.value? 1 : 0, right_boolean.value? 1 : 0));
+                    case MarbleInteger: case MarbleFloat:
+                        return new MarbleFloat((float) Math.Pow(left_boolean.value? 1 : 0, (float) right.get_value()));
+                }
+                break;
+            case MarbleInteger: case MarbleFloat:
+                switch (right) {
+                    case MarbleBoolean right_boolean: 
+                        return new MarbleFloat((float) Math.Pow((float) left.get_value(), right_boolean.value? 1 : 0));
+                    case MarbleInteger: case MarbleFloat:
+                        return new MarbleFloat((float) Math.Pow((float) left.get_value(), (float) right.get_value()));
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData ModolusOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, left.as_integer() % right.as_integer());
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value % right_integer.value);
                 }
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.FLOAT, left.as_float() % right.as_float());
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleFloat right_float:
+                        return new MarbleFloat(left_float.value % right_float.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData AndOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        return new MarbleData(MarbleData.TYPE.BOOLEAN, (bool) left.convert_to(MarbleData.TYPE.BOOLEAN, position).value && (bool) right.convert_to(MarbleData.TYPE.BOOLEAN, position).value);
+    private async Task<MarbleBoolean> AndOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        return new MarbleBoolean((bool) (await ConvertOperation(MarbleData.TYPE.BOOLEAN, left, position)).get_value() && (bool) (await ConvertOperation(MarbleData.TYPE.BOOLEAN, right, position)).get_value());
     }
     private MarbleData BitwiseAndOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value & (int) right.value);
+        switch (left) {
+            case MarbleBoolean left_boolean: 
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleBoolean(left_boolean.value & right_boolean.value);
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger((left_boolean.value? 1 : 0) & right_integer.value);
+                }
+                break;
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleInteger(left_integer.value & (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value & right_integer.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData OrOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        return new MarbleData(MarbleData.TYPE.BOOLEAN, (bool) left.convert_to(MarbleData.TYPE.BOOLEAN, position).value || (bool) right.convert_to(MarbleData.TYPE.BOOLEAN, position).value);
+    private async Task<MarbleBoolean> OrOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        return new MarbleBoolean((bool) (await ConvertOperation(MarbleData.TYPE.BOOLEAN, left, position)).get_value() || (bool) (await ConvertOperation(MarbleData.TYPE.BOOLEAN, right, position)).get_value());
     }
     private MarbleData BitwiseOrOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.INTEGER, (int) left.value | (int) right.value);
+        switch (left) {
+            case MarbleBoolean left_boolean: 
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleBoolean(left_boolean.value | right_boolean.value);
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger((left_boolean.value? 1 : 0) | right_integer.value);
+                }
+                break;
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleInteger(left_integer.value | (right_boolean.value? 1 : 0));
+                    case MarbleInteger right_integer:
+                        return new MarbleInteger(left_integer.value | right_integer.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData EqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, left.value == right.value);
+    private MarbleBoolean EqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleBoolean(left_boolean.value == right_boolean.value);
                 }
                 break;
-            case MarbleData.TYPE.INTEGER:
-                switch (right.type) {
-                    case MarbleData.TYPE.INTEGER:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, left.as_integer() == right.as_integer());
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value == right_integer.value);
                 }
                 break;
-            case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, left.as_float() == right.as_float());
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value == right_float.value);
                 }
                 break;
-            case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, left.as_string() == right.as_string());
-                }
-                break;
-        }
-        return new MarbleData(MarbleData.TYPE.BOOLEAN, false);
-    }
-    private MarbleData NotEqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.STRING:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, left.value != right.value);
+            case MarbleString left_string:
+                switch (right) {
+                    case MarbleString right_string:
+                        return new MarbleBoolean(left_string.value == right_string.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData LesserThanOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, (int) left.value < (int) right.value);
+    private MarbleBoolean NotEqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleBoolean left_boolean:
+                switch (right) {
+                    case MarbleBoolean right_boolean:
+                        return new MarbleBoolean(left_boolean.value != right_boolean.value);
+                }
+                break;
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value != right_integer.value);
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value != right_float.value);
+                }
+                break;
+            case MarbleString left_string:
+                switch (right) {
+                    case MarbleString right_string:
+                        return new MarbleBoolean(left_string.value != right_string.value);
+                }
+                break;
+        }
+        throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
+    }
+    private MarbleBoolean LesserThanOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value < right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_integer.value < right_float.value);
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_float.value < right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value < right_float.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData LesserThanOrEqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, (int) left.value <= (int) right.value);
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value <= right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_integer.value <= right_float.value);
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_float.value <= right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value <= right_float.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData GreaterThanOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, (int) left.value > (int) right.value);
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value > right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_integer.value > right_float.value);
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_float.value > right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value > right_float.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
     private MarbleData GreaterThanOrEqualsOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                switch (right.type) {
-                    case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, (int) left.value >= (int) right.value);
+        switch (left) {
+            case MarbleInteger left_integer:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_integer.value >= right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_integer.value >= right_float.value);
+                }
+                break;
+            case MarbleFloat left_float:
+                switch (right) {
+                    case MarbleInteger right_integer:
+                        return new MarbleBoolean(left_float.value >= right_integer.value);
+                    case MarbleFloat right_float:
+                        return new MarbleBoolean(left_float.value >= right_float.value);
                 }
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData InOperation(MarbleData left, MarbleData right, TokenPosition position) {
-        switch (left.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.INTEGER: case MarbleData.TYPE.FLOAT: case MarbleData.TYPE.STRING:
-                switch (right.type) {
-                    case MarbleData.TYPE.LIST:
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, (right.value as List<MarbleData>).Any((MarbleData element) => element.value == left.value));}
+    private MarbleBoolean InOperation(MarbleData left, MarbleData right, TokenPosition position) {
+        switch (left) {
+            case MarbleBoolean: case MarbleInteger: case MarbleFloat: case MarbleString:
+                switch (right) {
+                    case MarbleList list:
+                        return new MarbleBoolean(list.value.Any((MarbleData element) => element.get_value() == left.get_value()));}
                 break;
         }
         throw new InterpreterError(InterpreterError.TYPE.INCOMPATIBLE_TYPES, position);
     }
-    private MarbleData IsOperation(MarbleData left, MarbleData right) {
-        return new MarbleData(MarbleData.TYPE.BOOLEAN,left.type == right.type);
+    private MarbleBoolean IsOperation(MarbleData left, MarbleData right) {
+        return new MarbleBoolean(left.GetType() == right.GetType());
     }
-    private async Task<InterpreterOutput> InterpreteBinaryOperatorNode(BinaryOperatorNode node, ContextualStorage storage) {
+    private async Task<InterpreterOutput> InterpreteBinaryOperatorNode(BinaryOperatorNode node, ContextualStorage main_context) {
         switch (node.Operator.Type) {
-            case OperatorToken.OPERATOR.DOT: return await DotOperation(node, storage);
-            case OperatorToken.OPERATOR.ACCESSOR: return await AccessorOperation(node, storage);
-            case OperatorToken.OPERATOR.CALLER: return await CallerOperation(node, storage);
-            case OperatorToken.OPERATOR.ADD: return await AddOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), storage, node.Position);
-            case OperatorToken.OPERATOR.SUBTRACT: return SubtractOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.MULTIPLY: return MultiplyOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.DIVIDE: return DivideOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.INTEGER_DIVIDE: return IntegerDivideOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.EXPONENT: return ExponentOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.MODOLUS: return ModolusOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.AND: return AndOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.BITWISE_AND: return BitwiseAndOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.OR: return OrOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.BITWISE_OR: return BitwiseOrOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.IN: return InOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.IS: return IsOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position));
-            case OperatorToken.OPERATOR.EQUALS: return EqualsOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.NOT_EQUALS: return NotEqualsOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.GREATER_THAN: return GreaterThanOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS: return GreaterThanOrEqualsOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.LESSER_THAN: return LesserThanOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS: return LesserThanOrEqualsOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position);
-            case OperatorToken.OPERATOR.ASSIGN: return await AssignOperation(node.Left, (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), storage); 
-            case OperatorToken.OPERATOR.ADD_AND_ASSIGN: return await AssignOperation(node.Left, await AddOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), storage, node.Position), storage); 
-            case OperatorToken.OPERATOR.SUBTRACT_AND_ASSIGN: return await AssignOperation(node.Left, SubtractOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position), storage); 
-            case OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN: return await AssignOperation(node.Left, MultiplyOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position), storage); 
-            case OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN: return await AssignOperation(node.Left, DivideOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position), storage); 
-            case OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN: return await AssignOperation(node.Left, ExponentOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position), storage); 
-            case OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN: return await AssignOperation(node.Left, ModolusOperation((await InterpreteNode(node.Left, storage)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, storage)).ToMarbleData(node.Right.Position), node.Position), storage);
+            case OperatorToken.OPERATOR.DOT: return await DotOperation(node, main_context);
+            case OperatorToken.OPERATOR.ACCESSOR: return await AccessorOperation(node, main_context);
+            case OperatorToken.OPERATOR.CALLER: return await CallerOperation(node, main_context);
+            case OperatorToken.OPERATOR.ADD: return await AddOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.SUBTRACT: return SubtractOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.MULTIPLY: return MultiplyOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.DIVIDE: return DivideOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.INTEGER_DIVIDE: return IntegerDivideOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.EXPONENT: return ExponentOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.MODOLUS: return ModolusOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.AND: return await AndOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.BITWISE_AND: return BitwiseAndOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.OR: return await OrOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.BITWISE_OR: return BitwiseOrOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.IN: return InOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.IS: return IsOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position));
+            case OperatorToken.OPERATOR.EQUALS: return EqualsOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.NOT_EQUALS: return NotEqualsOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.GREATER_THAN: return GreaterThanOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.GREATER_THAN_OR_EQUALS: return GreaterThanOrEqualsOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.LESSER_THAN: return LesserThanOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.LESSER_THAN_OR_EQUALS: return LesserThanOrEqualsOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position);
+            case OperatorToken.OPERATOR.ASSIGN: return await AssignOperation(node.Left, (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), main_context); 
+            case OperatorToken.OPERATOR.ADD_AND_ASSIGN: return await AssignOperation(node.Left, await AddOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context); 
+            case OperatorToken.OPERATOR.SUBTRACT_AND_ASSIGN: return await AssignOperation(node.Left, SubtractOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context); 
+            case OperatorToken.OPERATOR.MULTIPLY_AND_ASSIGN: return await AssignOperation(node.Left, MultiplyOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context); 
+            case OperatorToken.OPERATOR.DIVIDE_AND_ASSIGN: return await AssignOperation(node.Left, DivideOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context); 
+            case OperatorToken.OPERATOR.EXPONENT_AND_ASSIGN: return await AssignOperation(node.Left, ExponentOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context); 
+            case OperatorToken.OPERATOR.MODOLUS_AND_ASSIGN: return await AssignOperation(node.Left, ModolusOperation((await InterpreteNode(node.Left, main_context)).ToMarbleData(node.Left.Position), (await InterpreteNode(node.Right, main_context)).ToMarbleData(node.Right.Position), node.Position), main_context);
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private async Task<InterpreterOutput> InterpreteUnaryOperatorNode(UnaryOperatorNode node, ContextualStorage storage) {
+    private async Task<InterpreterOutput> InterpreteUnaryOperatorNode(UnaryOperatorNode node, ContextualStorage main_context) {
         switch (node.Operator) {
             case OperatorToken operator_token:
                 switch (operator_token.Type) {
                     case OperatorToken.OPERATOR.ADD:
-                        return await InterpreteNode(node.Operand, storage);
+                        return await InterpreteNode(node.Operand, main_context);
                     case OperatorToken.OPERATOR.NOT: {
-                        MarbleData data = (await InterpreteNode(node.Operand, storage)).ToMarbleData(node.Operand.Position);
-                        if (data.type != MarbleData.TYPE.BOOLEAN) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
-                        return new MarbleData(MarbleData.TYPE.BOOLEAN, !data.as_boolean());
+                        MarbleData data = (await InterpreteNode(node.Operand, main_context)).ToMarbleData(node.Operand.Position);
+                        if (data is not MarbleBoolean) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
+                        return new MarbleBoolean(!(bool) data.get_value());
                     }
                     case OperatorToken.OPERATOR.SUBTRACT: {
-                        MarbleData data = (await InterpreteNode(node.Operand, storage)).ToMarbleData(node.Operand.Position);
-                        if (data.type != MarbleData.TYPE.INTEGER && data.type != MarbleData.TYPE.FLOAT) throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
-                        return new MarbleData(data.type, -data.as_float());
+                        MarbleData data = (await InterpreteNode(node.Operand, main_context)).ToMarbleData(node.Operand.Position);
+                        if (data is MarbleInteger) {
+                            return new MarbleInteger(-(int) data.get_value());
+                        } else if (data is MarbleFloat) {
+                            return new MarbleFloat(-(float) data.get_value());
+                        } else {
+                            throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
+                        }
                     }
                 }
                 break;
@@ -979,7 +1198,7 @@ public class Interpreter {
                 throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
                 switch (keyword_token.Type) {
                     case KeywordToken.TYPE.MODIFIER: {
-                        StorageEntity storage_data = (await InterpreteNode(node.Operand, storage)).IsStorageEntity(node.Operand.Position);
+                        StorageEntity storage_data = (await InterpreteNode(node.Operand, main_context)).IsStorageEntity(node.Operand.Position);
                         switch (keyword_token.Keyword) {
                             case KeywordToken.KEYWORD.CONSTANT:
                                 if (storage_data is not StorageVariable) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Operator.Position, "Only for variables");
@@ -1004,9 +1223,9 @@ public class Interpreter {
                     }
                     case KeywordToken.TYPE.DATATYPE: {
                         DataNode identifier = node.Operand as DataNode;
-                        if (storage.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                        if (main_context.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
                         StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESSMODE.NONE, false, (StorageEntity.DATATYPE) (keyword_token.Keyword - 4), false, null);
-                        storage.CreateVariable(identifier.Data as string, storage_variable);
+                        main_context.CreateVariable(identifier.Data as string, storage_variable);
                         return storage_variable;
                     }
                     case KeywordToken.TYPE.DEFINITION:
@@ -1016,10 +1235,10 @@ public class Interpreter {
                                 BinaryOperatorNode function = definition.Left as BinaryOperatorNode;
                                 UnaryOperatorNode identifier = function.Left as UnaryOperatorNode;
                                 string name = (identifier.Operand as DataNode).Data as string;
-                                if (storage.HasFunction(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                                if (main_context.HasFunction(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
                                 StorageEntity.DATATYPE datatype = identifier.Operator.is_keyword_type(KeywordToken.TYPE.DATATYPE, out KeywordToken type)? (StorageEntity.DATATYPE) (type.Keyword - 4) : StorageEntity.DATATYPE.USER_DEFINED;
                                 StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESSMODE.NONE, false, datatype, (function.Right as DataNode).Data as List<Node>, definition.Right as OperandInstructionNode);
-                                storage.CreateFunction(name, storage_function);
+                                main_context.CreateFunction(name, storage_function);
                                 return storage_function;
                             }
                             case KeywordToken.KEYWORD.CLASS: {
@@ -1033,7 +1252,7 @@ public class Interpreter {
                                     }
                                     case BinaryOperatorNode bin: {
                                         identifier = bin.Left as DataNode;
-                                        StorageEntity output = (await InterpreteNode(bin.Right, storage)).IsStorageEntity(bin.Right.Position);
+                                        StorageEntity output = (await InterpreteNode(bin.Right, main_context)).IsStorageEntity(bin.Right.Position);
                                         if (output is not StorageClass) new InterpreterError(InterpreterError.TYPE.MESSAGE, bin.Right.Position);
                                         Class = (output as StorageClass).Storage.CreateChild();
                                         break;
@@ -1042,10 +1261,10 @@ public class Interpreter {
                                 switch (keyword_token.Keyword) {
                                     case KeywordToken.KEYWORD.CLASS:
                                         string name = identifier.Data as string;
-                                        if (storage.HasClass(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                                        if (main_context.HasClass(name)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
                                         await InterpreteInstructionListNode((node.Operand as BinaryOperatorNode).Right as OperandInstructionNode, Class);
                                         StorageClass storage_class = new StorageClass(StorageEntity.ACCESSMODE.NONE, false, Class);
-                                        storage.CreateClass(name, storage_class);
+                                        main_context.CreateClass(name, storage_class);
                                         return storage_class;
                                     case KeywordToken.KEYWORD.STRUCTURE:
                                     case KeywordToken.KEYWORD.ENUMERATION:
@@ -1056,7 +1275,7 @@ public class Interpreter {
                             case KeywordToken.KEYWORD.CONSTRUCTOR: {
                                 BinaryOperatorNode definition = node.Operand as BinaryOperatorNode;
                                 StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESSMODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, (definition.Left as DataNode).Data as List<Node>, definition.Right as OperandInstructionNode);
-                                storage.CreateFunction("Constructor!", storage_function);
+                                main_context.CreateFunction("Constructor!", storage_function);
                                 return storage_function;
                             }
                         }
@@ -1066,9 +1285,9 @@ public class Interpreter {
             case DataToken: {
                 throw new InterpreterError(InterpreterError.TYPE.INVALID_OPERATION, node.Position);
                 DataNode identifier = node.Operand as DataNode;
-                if (storage.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
+                if (main_context.HasVariable(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Operand.Position);
                 StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESSMODE.NONE, false, StorageEntity.DATATYPE.USER_DEFINED, false, null);
-                storage.CreateVariable(identifier.Data as string, storage_variable);
+                main_context.CreateVariable(identifier.Data as string, storage_variable);
                 return storage_variable;
             }
             default:
@@ -1076,48 +1295,80 @@ public class Interpreter {
         }
         throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "Weird keyword token");
     }
-    private async Task<InterpreterOutput> InterpreteDataNode(DataNode node, ContextualStorage storage) {
+    private async Task<InterpreterOutput> InterpreteDataNode(DataNode node, ContextualStorage main_context) {
         switch (node.Type) {
             case DataNode.TYPE.BOOLEAN:
-                return new MarbleData(MarbleData.TYPE.BOOLEAN, node.Data);
+                return new MarbleBoolean((bool) node.Data);
             case DataNode.TYPE.INTEGER:
-                return new MarbleData(MarbleData.TYPE.INTEGER, node.Data);
+                return new MarbleInteger((int) node.Data);
             case DataNode.TYPE.FLOAT:
-                return new MarbleData(MarbleData.TYPE.FLOAT, node.Data);
+                return new MarbleFloat((float) node.Data);
             case DataNode.TYPE.STRING:
-                return new MarbleData(MarbleData.TYPE.STRING, node.Data);
+                return new MarbleString((string) node.Data);
             case DataNode.TYPE.NULL:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
             case DataNode.TYPE.DICTIONARY: {
-                Dictionary<object, MarbleData> dictionary = new Dictionary<object, MarbleData>();
+                Dictionary<string, MarbleData> dictionary = new Dictionary<string, MarbleData>();
                 foreach (DataNode element in node.Data as List<Node>) {
                     Dictionary<string, object> key_value = element.Data as Dictionary<string, object>;
-                    dictionary.Add((key_value["Token"] as DataToken).Data, (await InterpreteNode(key_value["Node"] as Node, storage)).ToMarbleData(element.Position));
+                    dictionary.Add((key_value["Token"] as DataToken).Data.ToString(), (await InterpreteNode(key_value["Node"] as Node, main_context)).ToMarbleData(element.Position));
                 }
-                return new MarbleData(MarbleData.TYPE.DICTIONARY, dictionary);
+                return new MarbleDictionary(dictionary);
             }
             case DataNode.TYPE.LIST: {
                 List<MarbleData> elements = new List<MarbleData>();
                 foreach (Node element in node.Data as List<Node>) {
-                    elements.Add((await InterpreteNode(element, storage)).ToMarbleData(element.Position));
+                    elements.Add((await InterpreteNode(element, main_context)).ToMarbleData(element.Position));
                 }
-                return new  MarbleData(MarbleData.TYPE.LIST, elements);
+                return new  MarbleList(elements);
             }
             case DataNode.TYPE.IDENTIFIER:
-                if (!storage.GetEntity(node.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, node.Position);
+                if (!main_context.GetEntity(node.Data as string, out StorageEntity storage_entity)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, node.Position);
                 return storage_entity;
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private async Task<FlowController> InterpreteFlowControlNode(FlowControlNode node, ContextualStorage storage) {
+    private async Task<FlowController> InterpreteFlowControlNode(FlowControlNode node, ContextualStorage main_context) {
         switch (node.Type) {
             case FlowController.TYPE.BREAKPOINT:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
             case FlowController.TYPE.RETURN:
-                if (!storage.HasVariable("RETURN!")) throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, node.Position);
-                StorageVariable storage_variable = storage.GetVariable("RETURN!");
+                if (!main_context.HasVariable("RETURN!")) throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, node.Position);
+                StorageVariable storage_variable = main_context.GetVariable("RETURN!");
                 if (storage_variable.Datatype == StorageEntity.DATATYPE.VOID) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Position, "This function does not return");
-                storage_variable.assign((await InterpreteNode(node.Data, storage)).ToMarbleData(node.Data.Position), node.Position);
+                MarbleData data = (await InterpreteNode(node.Data, main_context)).ToMarbleData(node.Data.Position);
+                switch (storage_variable.Datatype) {
+                    case StorageEntity.DATATYPE.VARIANT:
+                        storage_variable.Data = data.duplicate();
+                        break;
+                    case StorageEntity.DATATYPE.BOOLEAN:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.BOOLEAN, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.INTEGER:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.INTEGER, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.FLOAT:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.FLOAT, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.STRING:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.STRING, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.LIST:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.LIST, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.DICTIONARY:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.DICTIONARY, data, node.Data.Position);
+                        break;
+                    case StorageEntity.DATATYPE.CALLABLE:
+                        if (data is MarbleCallable) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Data.Position);
+                        storage_variable.Data = data.duplicate();
+                        break;
+                    case StorageEntity.DATATYPE.USER_DEFINED:
+                        if (data is not MarbleObject) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Data.Position);
+                        if ((data as MarbleObject).value.Class_name != storage_variable.Class_name)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Data.Position);
+                        storage_variable.Data = data.duplicate();
+                        break;
+                }
                 return new FlowController.Return(storage_variable.Data);
             case FlowController.TYPE.BREAK:
                 return new FlowController(FlowController.TYPE.BREAK);
@@ -1126,28 +1377,28 @@ public class Interpreter {
         }
         throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
     }
-    private async Task<FlowController> InterpreteWhileNode(WhileNode node, ContextualStorage storage) {
-        while ((await InterpreteNode(node.Expression, storage)).ToMarbleData(node.Expression.Position).convert_to(MarbleData.TYPE.BOOLEAN, node.Expression.Position).as_boolean()) {
-            FlowController breaker = await InterpreteInstructionListNode(node.Instructions, storage);
+    private async Task<FlowController> InterpreteWhileNode(WhileNode node, ContextualStorage main_context) {
+        while ((await ConvertOperation(MarbleData.TYPE.BOOLEAN, (await InterpreteNode(node.Expression, main_context)).ToMarbleData(node.Expression.Position), node.Expression.Position) as MarbleBoolean).value) {
+            FlowController breaker = await InterpreteInstructionListNode(node.Instructions, main_context);
             if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
             if (breaker.Type == FlowController.TYPE.BREAK) break;
             if (breaker.Type == FlowController.TYPE.RETURN) return breaker;
         }
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteForNode(ForNode node, ContextualStorage storage) {
-        ContextualStorage child_storage = storage.CreateChild();
+    private async Task<FlowController> InterpreteForNode(ForNode node, ContextualStorage main_context) {
+        ContextualStorage child_storage = main_context.CreateChild();
         if (child_storage.HasVariable(node.Iterator.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Iterator.Position);
         StorageVariable Iterator = new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VARIANT, false, false, null);
         child_storage.CreateVariable(node.Iterator.Data as string, Iterator);
         MarbleData Iteratable = (await InterpreteNode(node.Iteratable, child_storage)).ToMarbleData(node.Iteratable.Position);
-        switch (Iteratable.type) {
-            case MarbleData.TYPE.BOOLEAN: case MarbleData.TYPE.FLOAT:
+        switch (Iteratable) {
+            case MarbleBoolean: case MarbleFloat:
                 throw new InterpreterError(InterpreterError.TYPE.MESSAGE, node.Iteratable.Position, "Can't loop with this");
-            case MarbleData.TYPE.INTEGER: {
-                Iterator.Data = new MarbleData(MarbleData.TYPE.INTEGER, 0);
-                for (int x = 0; x < Iteratable.as_integer(); x++) {
-                    Iterator.Data.value = x;
+            case MarbleInteger integer: {
+                Iterator.Data = new MarbleInteger(0);
+                for (int x = 0; x < integer.value; x++) {
+                    Iterator.Data.set_value(x);
                     FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
                     if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
                     if (breaker.Type == FlowController.TYPE.BREAK) break;
@@ -1155,10 +1406,10 @@ public class Interpreter {
                 }
                 break;
             }
-            case MarbleData.TYPE.STRING: {
-                Iterator.Data = new MarbleData(MarbleData.TYPE.STRING, "");
-                foreach (char item in Iteratable.as_string()) {
-                    Iterator.Data.value = item + "";
+            case MarbleString marble_string: {
+                Iterator.Data = new MarbleString("");
+                foreach (char item in marble_string.value) {
+                    Iterator.Data.set_value(item + "");
                     FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
                     if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
                     if (breaker.Type == FlowController.TYPE.BREAK) break;
@@ -1166,9 +1417,8 @@ public class Interpreter {
                 }
                 break;
             }
-            case MarbleData.TYPE.LIST: {
-                Iterator.Data = new MarbleData(MarbleData.TYPE.INTEGER, 0);
-                foreach (MarbleData element in Iteratable.as_list()) {
+            case MarbleList list: {
+                foreach (MarbleData element in list.value) {
                     Iterator.Data = element;
                     FlowController breaker = await InterpreteInstructionListNode(node.Instructions, child_storage.CreateChild());
                     if (breaker.Type == FlowController.TYPE.CONTINUE) continue;
@@ -1177,29 +1427,29 @@ public class Interpreter {
                 }
                 break;
             }
-            case MarbleData.TYPE.DICTIONARY:
+            case MarbleDictionary:
                 throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
         }
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteIFNode(IFNode node, ContextualStorage storage) {
-        if ((await InterpreteNode(node.Expression, storage)).ToMarbleData(node.Expression.Position).convert_to(MarbleData.TYPE.BOOLEAN, node.Expression.Position).as_boolean()) {
-            return await InterpreteInstructionListNode(node.Implication, storage);
+    private async Task<FlowController> InterpreteIFNode(IFNode node, ContextualStorage main_context) {
+        if ((await ConvertOperation(MarbleData.TYPE.BOOLEAN, (await InterpreteNode(node.Expression, main_context)).ToMarbleData(node.Expression.Position), node.Expression.Position) as MarbleBoolean).value) {
+            return await InterpreteInstructionListNode(node.Implication, main_context);
         } else {
             bool do_else = true;
             foreach (IFNode.ElseIFNode child in node.Else_IF_nodes) {
-                if ((await InterpreteNode(node.Expression, storage)).ToMarbleData(node.Expression.Position).convert_to(MarbleData.TYPE.BOOLEAN, node.Expression.Position).as_boolean()) {
-                    return await InterpreteInstructionListNode(child.Implication, storage);
+                if ((await ConvertOperation(MarbleData.TYPE.BOOLEAN, (await InterpreteNode(child.Expression, main_context)).ToMarbleData(child.Expression.Position), child.Expression.Position) as MarbleBoolean).value) {
+                    return await InterpreteInstructionListNode(child.Implication, main_context);
                 }
             }
             if (do_else && node.Inverse != null) {
-                return await InterpreteInstructionListNode(node.Inverse, storage);
+                return await InterpreteInstructionListNode(node.Inverse, main_context);
             }
         }
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteVariableDefinitionNode(VariableDefinitionNode node, ContextualStorage storage) {
-        if (storage.HasVariable(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
+    private async Task<FlowController> InterpreteVariableDefinitionNode(VariableDefinitionNode node, ContextualStorage main_context) {
+        if (main_context.HasVariable(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
         StorageVariable storage_variable = new StorageVariable(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VOID, node.StaticModifier != null, node.ConstantModifier != null, null);
         if (node.AccessModeModifier != null) {
             storage_variable.AccessMode = node.AccessModeModifier.Keyword switch {
@@ -1213,7 +1463,7 @@ public class Interpreter {
         }
         MarbleData data = null;
         if (node.Value != null) {
-            data = (await InterpreteNode(node.Value, storage)).ToMarbleData(node.Value.Position);
+            data = (await InterpreteNode(node.Value, main_context)).ToMarbleData(node.Value.Position);
         }
         if (node.Datatype is KeywordNode) {
             switch ((node.Datatype as KeywordNode).Keyword) {
@@ -1245,26 +1495,61 @@ public class Interpreter {
                     storage_variable.Datatype = StorageEntity.DATATYPE.CALLABLE;
                     break;
             }
-            if (data != null) storage_variable.assign(data, node.Value.Position);
+            if (data != null) {
+                switch (storage_variable.Datatype) {
+                    case StorageEntity.DATATYPE.VARIANT:
+                        storage_variable.Data = data.duplicate();
+                        break;
+                    case StorageEntity.DATATYPE.BOOLEAN:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.BOOLEAN, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.INTEGER:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.INTEGER, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.FLOAT:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.FLOAT, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.STRING:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.STRING, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.LIST:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.LIST, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.DICTIONARY:
+                        storage_variable.Data = await ConvertOperation(MarbleData.TYPE.DICTIONARY, data, node.Value.Position);
+                        break;
+                    case StorageEntity.DATATYPE.CALLABLE:
+                        if (data is MarbleCallable) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                        storage_variable.Data = data.duplicate();
+                        break;
+                    case StorageEntity.DATATYPE.USER_DEFINED:
+                        if (data is not MarbleObject) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                        if ((data as MarbleObject).value.Class_name != storage_variable.Class_name)  throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                        storage_variable.Data = data.duplicate();
+                        break;
+                }
+            }
         } else {
             storage_variable.Datatype = StorageEntity.DATATYPE.USER_DEFINED;
-            if (data.type != MarbleData.TYPE.OBJECT) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
-            StorageClass storage_class = (await InterpreteNode(node.Datatype, storage)).IsStorageClass(node.Datatype.Position);
+            StorageClass storage_class = (await InterpreteNode(node.Datatype, main_context)).IsStorageClass(node.Datatype.Position);
             storage_variable.Class_name = storage_class.Class_name;
-            if (data.as_object().Class_name != storage_class.Class_name) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
-            storage_variable.Data = data;
+            if (data != null) {
+                if (data is not MarbleObject) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                if ((data.get_value() as StorageClass).Class_name != storage_class.Class_name) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, node.Value.Position);
+                storage_variable.Data = data;
+            }
         }
-        storage.CreateVariable(node.Identifier.Data as string, storage_variable);
+        main_context.CreateVariable(node.Identifier.Data as string, storage_variable);
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteClassDefinitionNode(ClassDefinitionNode node, ContextualStorage storage) {
-        if (storage.HasClass(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
+    private async Task<FlowController> InterpreteClassDefinitionNode(ClassDefinitionNode node, ContextualStorage main_context) {
+        if (main_context.HasClass(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
         ContextualStorage new_class;
         if (node.Datatype == null) {
             new_class = new ContextualStorage();
         } else {
             if (node.Datatype is KeywordNode) throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Identifier.Position);
-            StorageClass parent_class = (await InterpreteNode(node.Datatype, storage)).IsStorageClass(node.Datatype.Position);
+            StorageClass parent_class = (await InterpreteNode(node.Datatype, main_context)).IsStorageClass(node.Datatype.Position);
             new_class = parent_class.Storage.CreateChild();
         }
         StorageClass storage_class = new StorageClass(StorageEntity.ACCESSMODE.NONE, node.StaticModifier != null, node.Identifier.Data as string, new_class);
@@ -1278,12 +1563,13 @@ public class Interpreter {
                     break;
             }
         }
+        new_class.CreateClass(node.Identifier.Data as string, storage_class);
         await InterpreteInstructionListNode(node.Definition, storage_class.Storage);
-        storage.CreateClass(node.Identifier.Data as string, storage_class);
+        main_context.CreateClass(node.Identifier.Data as string, storage_class);
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteFunctionDefinitionNode(FunctionDefinitionNode node, ContextualStorage storage) {
-        if (storage.HasFunction(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
+    private async Task<FlowController> InterpreteFunctionDefinitionNode(FunctionDefinitionNode node, ContextualStorage main_context) {
+        if (main_context.HasFunction(node.Identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.ALREADY_DEFINED_IDENTIFIER, node.Identifier.Position);
         StorageFunction storage_function = new StorageFunction(StorageEntity.ACCESSMODE.NONE, StorageEntity.DATATYPE.VOID, node.StaticModifier != null, node.UnlimitedArguments, node.Arguments, node.Instructions);
         if (node.AccessModeModifier != null) {
             switch (node.AccessModeModifier.Keyword) {
@@ -1318,16 +1604,19 @@ public class Interpreter {
                 case KeywordToken.KEYWORD.DICTIONARY:
                     storage_function.Datatype = StorageEntity.DATATYPE.DICTIONARY;
                     break;
+                case KeywordToken.KEYWORD.CALLABLE:
+                    storage_function.Datatype = StorageEntity.DATATYPE.CALLABLE;
+                    break;
             }
         } else {
             storage_function.Datatype = StorageEntity.DATATYPE.USER_DEFINED;
-            StorageClass storage_class = (await InterpreteNode(node.Datatype, storage)).IsStorageClass(node.Datatype.Position);
+            StorageClass storage_class = (await InterpreteNode(node.Datatype, main_context)).IsStorageClass(node.Datatype.Position);
             storage_function.Class_name = storage_class.Class_name;
         }
-        storage.CreateFunction(node.Identifier.Data as string, storage_function);
+        main_context.CreateFunction(node.Identifier.Data as string, storage_function);
         return new FlowController(FlowController.TYPE.DONE);
     }
-    private async Task<FlowController> InterpreteConstructorNode(ConstructorNode node, ContextualStorage storage) {
+    private async Task<FlowController> InterpreteConstructorNode(ConstructorNode node, ContextualStorage main_context) {
         StorageFunction.Constructor storage_constructor = new StorageFunction.Constructor(StorageEntity.ACCESSMODE.NONE, node.UnlimitedArguments, node.Arguments, node.BaseParameters, node.Instructions);
         if (node.AccessModeModifier != null) {
             switch (node.AccessModeModifier.Keyword) {
@@ -1339,7 +1628,7 @@ public class Interpreter {
                     break;
             }
         }
-        storage.CreateConstructor("1", storage_constructor);
+        main_context.CreateConstructor("1", storage_constructor);
         return await Task.Run(() => new FlowController(FlowController.TYPE.DONE));
     }
 }

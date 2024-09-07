@@ -5,114 +5,84 @@
 [resource]
 script = ExtResource("1_vny5t")
 Stop_at = 2
-Code = "class Matrix {
-	variable list rows
-	variable integer x
-	variable integer y
-	constructor(list data) {
-		rows = data
-		x = rows[0].size
-		y = rows.size
+Code = "class CPU {
+	public static constant variable integer MOVE_A_C = 0
+	public static constant variable integer MOVE_B_C = 1
+	public static constant variable integer ADD = 2
+	public static constant variable integer SUB = 3
+	public static constant variable integer AND = 4
+	public static constant variable integer OR = 5
+	public static constant variable integer LOAD_A = 6
+	public static constant variable integer LOAD_B = 7
+	public static constant variable integer OUTPUT = 8
+
+	public variable integer ProgramCounter = 0
+	public variable list Register
+	public variable integer A = 0
+	public variable integer B = 0
+	public variable integer C = 0
+	public variable boolean SwitchControl = false
+	public variable boolean load_a = false
+	public variable boolean load_b = false
+
+	public function void set_register(list register) {
+		Register = register
 	}
-	public function variant remove_column(integer index) {
-		for (i in y) {
-			rows[i].pop(index)
-		}
-		x -= 1
-		return Matrix(rows)
-	}
-	public function variant remove_row(integer index) {
-		rows.pop(index)
-		y -= 1
-		return Matrix(rows)
-	}
-	public function void set_column(integer index, list data) {
-		for (i in y) {
-			rows[i][index] = data[i]
-		}
-	}
-	public function void set_row(integer index, list data) {
-		rows[index] = data
-	}
-	public function list get_column(integer index) {
-		variable list data = []
-		for (i in y) {
-			data.append(rows[i][index])
-		}
-		return data
-	}
-	public function list get_row(integer index) {
-		return rows[index]
-	}
-	public function variant duplicate() {
-		variable list rows = []
-		for (row in rows) {
-			variable list new_row = []
-			for (number in row) {
-				new_row.append(number)
-			}
-			rows.append(new_row)
-		}
-		return Matrix(rows)
-	}
-	public function float determinant() {
-		if (x == y) {
-			variable float determinant = 0
-			if (x == 2) {
-				breakpoint
-				determinant += rows[0][0] * rows[1][1]
-				breakpoint
-				determinant += (rows[0][0] * rows[1][1]) - (rows[1][0] * rows[0][1])
-			}
-			else {
-				for (i in y) {
-					determinant += (if ((i % 2) == 0) => 1 else => -1) * rows[0][i] * duplicate().remove_row(0).remove_column(i).determinant()
+	public function void Run() {
+		while (ProgramCounter < Register.size) {
+			if (SwitchControl) {
+				if (load_a) {
+					A = Register[ProgramCounter]
+					load_a = false
+				}
+				if (load_b) {
+					B = Register[ProgramCounter]
+					load_b = false
+				}
+				SwitchControl = false
+			} else {
+				if (Register[ProgramCounter] == MOVE_A_C) {
+					A = C
+				} elseif (Register[ProgramCounter] == MOVE_B_C) {
+					B = C
+				} elseif (Register[ProgramCounter] == ADD) {
+					C = A + B
+				} elseif (Register[ProgramCounter] == SUB) {
+					C = A - B
+				} elseif (Register[ProgramCounter] == OR) {
+					C = A and B
+				} elseif (Register[ProgramCounter] == OR) {
+					C = A or B
+				} elseif (Register[ProgramCounter] == LOAD_A) {
+					SwitchControl = true
+					load_a = true
+				} elseif (Register[ProgramCounter] == LOAD_B) {
+					SwitchControl = true
+					load_b = true
+				} elseif (Register[ProgramCounter] == OUTPUT) {
+					PrintLine(C)
+					break
+				} else {
+					PrintLine('Invalid Instruction:', Register[ProgramCounter])
 				}
 			}
-			return determinant
+			ProgramCounter += 1
 		}
-		return 0
-	}
-	public function variant multiply(Matrix otherMatrix) {
-		if (x == otherMatrix.y) {
-			variable list result = []
-			for (i in y) {
-				variable list newRow = []
-				for (k in otherMatrix.x) {
-					variable integer newElement = 0
-					for (j in x) {
-						newElement += rows[i][j] * otherMatrix.rows[j][k]
-					}
-					newRow.append(newElement)
-				}
-				result.append(newRow)
-			}
-			return Matrix(result)
-		}
-	}
-	
-	public function string to_string() {
-		variable string output = ''
-		for (row in rows) {
-			output += '|'
-			for (number in row) {
-				output += number + ', '
-			}
-			output += '|\\n'
-		}
-		return output
 	}
 }
-variable list x2 = [
-	[1, 2],
-	[3, 4]
-]
-variable list x3 = [
-	[1, 2, 3],
-	[4, 5, 6],
-	[7, 8, 9]
-]
-variable Matrix Matrix_A = Matrix(x2)
-Print(Matrix_A.determinant())
 
+variable CPU CPU_1 = CPU()
+CPU_1.set_register([
+	CPU.LOAD_A,
+	5,
+	CPU.LOAD_B,
+	1,
+	CPU.ADD,
+	CPU.MOVE_A_C,
+	CPU.LOAD_B,
+	3,
+	CPU.SUB,
+	CPU.OUTPUT
+])
+CPU_1.Run()
 "

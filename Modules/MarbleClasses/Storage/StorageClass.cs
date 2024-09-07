@@ -6,7 +6,7 @@ public class StorageClass : StorageEntity {
         Storage = storage;
     }
     public override StorageClass Duplicate() {
-        return new StorageClass(AccessMode, IsStatic, Class_name, Storage.Duplicate());
+        return new StorageClass(AccessMode, IsStatic, Class_name, Storage.Duplicate()) { Class_name = Class_name };
     }
     public override string ToString() {
         return $"Access mode: {AccessMode}, Static: {IsStatic}, Datatype: {Datatype}";
