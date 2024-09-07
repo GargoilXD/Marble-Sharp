@@ -4,9 +4,9 @@ public class MarbleFloat : MarbleType {
             case MarbleData.TYPE.BOOLEAN:
                 return new MarbleData(MarbleData.TYPE.FLOAT, (bool) operand.value? 1 : 0);
             case MarbleData.TYPE.INTEGER:
-                return new MarbleData(MarbleData.TYPE.FLOAT, (bool) operand.value);
+                return new MarbleData(MarbleData.TYPE.FLOAT, (int) operand.value);
             case MarbleData.TYPE.FLOAT:
-                return new MarbleData(MarbleData.TYPE.FLOAT, (bool) operand.value);
+                return operand.duplicate();
             case MarbleData.TYPE.STRING: {
                 if (float.TryParse((string) operand.value, out float value)) return new MarbleData(MarbleData.TYPE.FLOAT, value);
                 break;

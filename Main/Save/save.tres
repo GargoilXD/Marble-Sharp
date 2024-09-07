@@ -5,38 +5,114 @@
 [resource]
 script = ExtResource("1_vny5t")
 Stop_at = 2
-Code = "#Multiple Constructors and function parameter assigment#
-#class Human {
-	public variable integer Age
-	public variable string Gender
-	public constructor(integer age, string gender) {
-		Age = age
-		Gender = gender
+Code = "class Matrix {
+	variable list rows
+	variable integer x
+	variable integer y
+	constructor(list data) {
+		rows = data
+		x = rows[0].size
+		y = rows.size
 	}
-}
-class Human Person {
-	public variable string First_name
-	public variable string Last_name
-	public constructor(string first_name, string last_name, integer age, string gender) : (age, gender) {
-		First_name = first_name
-		Last_name = last_name
+	public function variant remove_column(integer index) {
+		for (i in y) {
+			rows[i].pop(index)
+		}
+		x -= 1
+		return Matrix(rows)
 	}
+	public function variant remove_row(integer index) {
+		rows.pop(index)
+		y -= 1
+		return Matrix(rows)
+	}
+	public function void set_column(integer index, list data) {
+		for (i in y) {
+			rows[i][index] = data[i]
+		}
+	}
+	public function void set_row(integer index, list data) {
+		rows[index] = data
+	}
+	public function list get_column(integer index) {
+		variable list data = []
+		for (i in y) {
+			data.append(rows[i][index])
+		}
+		return data
+	}
+	public function list get_row(integer index) {
+		return rows[index]
+	}
+	public function variant duplicate() {
+		variable list rows = []
+		for (row in rows) {
+			variable list new_row = []
+			for (number in row) {
+				new_row.append(number)
+			}
+			rows.append(new_row)
+		}
+		return Matrix(rows)
+	}
+	public function float determinant() {
+		if (x == y) {
+			variable float determinant = 0
+			if (x == 2) {
+				breakpoint
+				determinant += rows[0][0] * rows[1][1]
+				breakpoint
+				determinant += (rows[0][0] * rows[1][1]) - (rows[1][0] * rows[0][1])
+			}
+			else {
+				for (i in y) {
+					determinant += (if ((i % 2) == 0) => 1 else => -1) * rows[0][i] * duplicate().remove_row(0).remove_column(i).determinant()
+				}
+			}
+			return determinant
+		}
+		return 0
+	}
+	public function variant multiply(Matrix otherMatrix) {
+		if (x == otherMatrix.y) {
+			variable list result = []
+			for (i in y) {
+				variable list newRow = []
+				for (k in otherMatrix.x) {
+					variable integer newElement = 0
+					for (j in x) {
+						newElement += rows[i][j] * otherMatrix.rows[j][k]
+					}
+					newRow.append(newElement)
+				}
+				result.append(newRow)
+			}
+			return Matrix(result)
+		}
+	}
+	
 	public function string to_string() {
-		return First_name + \" \" + Last_name + \" \" + Age + \" \" + Gender
-	}
-	public function void speak(string sentence) {
-		PrintLine(First_name + \": \" + sentence)
-	}
-	public function void give_ID() {
-		speak(\"My name is \" + First_name + \" \" + Last_name + \", I am \" + Age + \" Years old and I am a \" + Gender)
+		variable string output = ''
+		for (row in rows) {
+			output += '|'
+			for (number in row) {
+				output += number + ', '
+			}
+			output += '|\\n'
+		}
+		return output
 	}
 }
-variable Person Person_A = Person(\"Mary\", \"Underling\", 19, \"Femoid\")
-Person_A.speak(\"I'm alive!!\")
-Person_A.give_ID()
-variable Person Person_B = Person(\"Kweku\", \"Ananse\", 500, \"Spider\")
-Person_B.speak(\"I'm alive!!\")
-Person_B.give_ID()
-#
+variable list x2 = [
+	[1, 2],
+	[3, 4]
+]
+variable list x3 = [
+	[1, 2, 3],
+	[4, 5, 6],
+	[7, 8, 9]
+]
+variable Matrix Matrix_A = Matrix(x2)
+Print(Matrix_A.determinant())
 
 "

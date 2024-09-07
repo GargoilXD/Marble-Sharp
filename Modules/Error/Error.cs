@@ -7,6 +7,7 @@ public class Error : Exception {
         Position = position;
     }
     public string IndicateErrorLine() {
+        if (Position == null) return "No position";
         string[] code = MarbleIDE.EditorCode.Split('\n');
         List<string> output = new List<string>();
         int line_start_index = 0;

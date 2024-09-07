@@ -35,7 +35,7 @@ public class MarbleData : InterpreterOutput {
             TYPE.BOOLEAN => MarbleBoolean.Convert(this, position),
             TYPE.INTEGER => MarbleInteger.Convert(this, position),
             TYPE.FLOAT => MarbleFloat.Convert(this, position),
-            TYPE.STRING => MarbleString.Convert(this),
+            TYPE.STRING => throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, position),//MarbleString.Convert(this),
             TYPE.LIST => MarbleList.Convert(this, position),
             TYPE.DICTIONARY => MarbleDictionary.Convert(this, position),
             TYPE.CALLABLE => MarbleCallable.Convert(this, position),
