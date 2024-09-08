@@ -253,7 +253,7 @@ public class Interpreter {
                                 switch(identifier.Data) {
                                     case "size":
                                         return new MarbleInteger(list.value.Count);
-                                    case "append": case "remove":
+                                    case "append": case "remove": case "has": case "clear":
                                         return new StorageFunction.Inbuilt(list, identifier.Data as string);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, identifier.Position, "undefined");
@@ -390,6 +390,14 @@ public class Interpreter {
                 StorageFunction function = (await InterpreteBinaryOperatorNode(binary, main_context)).IsStorageFunction(binary.Position);
                 if (function is StorageFunction.Inbuilt) {
                     switch((function as StorageFunction.Inbuilt).marbleData) {
+                        case MarbleString data:
+                            switch ((function as StorageFunction.Inbuilt).Function) {
+                                case "has":
+                                    if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                    return InOperation((await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), data, parameters[0].Position);
+                                default:
+                                    throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                            }
                         case MarbleList list:
                             switch ((function as StorageFunction.Inbuilt).Function) {
                                 case "append":
@@ -403,6 +411,14 @@ public class Interpreter {
                                     if (point is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[0].Position);
                                     list.value.RemoveAt((int) point.get_value());
                                     return new FlowController(FlowController.TYPE.DONE);
+                                case "has":
+                                    if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                    return InOperation((await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position), list, parameters[0].Position);
+                                case "clear":
+                                    if (parameters.Count > 0) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                    list.value.Clear();
+                                    return new FlowController(FlowController.TYPE.DONE);
+
                             }
                             break;
                     }
