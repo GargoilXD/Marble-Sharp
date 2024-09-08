@@ -119,21 +119,8 @@ variable list x3 = [
 	[40, 5, 60],
 	[7, 80, 9]
 ]
-variable list x4 = [
-	[1, 20, 3, 40],
-	[5, 60, 7, 80],
-	[9, 100, 11, 120],
-	[13, 140, 15, 160]
-]
 variable Matrix Matrix_A = Matrix(x2)
 variable Matrix Matrix_B = Matrix(x3)
-variable Matrix Matrix_C = Matrix(x3)
-variable Matrix Matrix_D = Matrix(x4)
 PrintLine(\"The determinant of Matrix A is:\", Matrix_A.determinant())
 PrintLine(\"The determinant of Matrix B is:\", Matrix_B.determinant())
-PrintLine(\"Matrix B times Matrix C is:\")
-Print(Matrix_B.multiply(Matrix_C))
-PrintLine(\"The determinant of Matrix B times Matrix C is:\", Matrix_B.multiply(Matrix_C).determinant())
-PrintLine(\"The determinant of Matrix D is:\", Matrix_D.determinant())
-
 "

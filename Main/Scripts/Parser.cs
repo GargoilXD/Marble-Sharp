@@ -72,7 +72,7 @@ public class Parser {
         while (CurrentToken.is_operator(OperatorToken.OPERATOR.DOT, out OperatorToken operator_token)) {
             next_token();
             if (!CurrentToken.is_data(DataToken.TYPE.WORD)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position, "Expected identifier");
-            node = new BinaryOperatorNode(node, operator_token, get_bracket_operation(get_operand_node()));
+            node = new BinaryOperatorNode(node, operator_token, get_operand_node());
         }
         return node;
     }
@@ -491,7 +491,6 @@ public class Parser {
                                     nodes.Add(new FlowControlNode(FlowController.TYPE.CONTINUE, keyword_token.Position + PreviousToken.Position));
                                     break;
                                 case KeywordToken.KEYWORD.BREAKPOINT:
-                                    if (!STRUCTURES.IN(STRUCTURES.FLOW_CONTROL, allowed_structures)) throw new ParserError(ParserError.TYPE.UNEXPECTED_TOKEN, CurrentToken.Position);
                                     next_token();
                                     nodes.Add(new FlowControlNode(FlowController.TYPE.BREAKPOINT, keyword_token.Position + PreviousToken.Position));
                                     break;

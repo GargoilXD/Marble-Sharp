@@ -2,7 +2,7 @@ using System.Collections.Generic;
 public class ContextualStorage {
 	public ContextualStorage Parent;
 	private Dictionary<string, StorageVariable> Variables;
-	private Dictionary<string, StorageFunction> Functions;
+	public Dictionary<string, StorageFunction> Functions;
 	private Dictionary<string, StorageFunction.Constructor> Constructors;
 	private Dictionary<string, StorageClass> Classes;
 	public ContextualStorage() {

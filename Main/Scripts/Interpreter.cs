@@ -253,6 +253,8 @@ public class Interpreter {
                                 switch(identifier.Data) {
                                     case "size":
                                         return new MarbleInteger(list.value.Count);
+                                    case "append": case "remove":
+                                        return new StorageFunction.Inbuilt(list, identifier.Data as string);
                                     default:
                                         throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, identifier.Position, "undefined");
                                 }
@@ -375,6 +377,9 @@ public class Interpreter {
                                 await InterpreteInstructionListNode(base_constructor.Instructions, child_storage);
                             }
                             await InterpreteInstructionListNode(constructor.Instructions, parameter_child_storage);
+                            foreach (KeyValuePair<string, StorageFunction> F in storage_class.Storage.Functions) {
+                                F.Value.context = storage_class.Storage;
+                            }
                             return new MarbleObject(storage_class);
                         }
                         throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_IDENTIFIER, data_node.Position);
@@ -383,7 +388,28 @@ public class Interpreter {
                 }
             case BinaryOperatorNode binary: {
                 StorageFunction function = (await InterpreteBinaryOperatorNode(binary, main_context)).IsStorageFunction(binary.Position);
-                return await RunFunction(function, parameters, main_context, main_context.CreateChild(), binary.Position);
+                if (function is StorageFunction.Inbuilt) {
+                    switch((function as StorageFunction.Inbuilt).marbleData) {
+                        case MarbleList list:
+                            switch ((function as StorageFunction.Inbuilt).Function) {
+                                case "append":
+                                    if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                    MarbleData new_element = (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position);
+                                    list.value.Add(new_element);
+                                    return new FlowController(FlowController.TYPE.DONE);
+                                case "remove":
+                                    if (parameters.Count > 1) throw new InterpreterError(InterpreterError.TYPE.MESSAGE, function.Position, "Too many parameters");
+                                    MarbleData point = (await InterpreteNode(parameters[0], main_context)).ToMarbleData(parameters[0].Position);
+                                    if (point is not MarbleInteger) throw new InterpreterError(InterpreterError.TYPE.DATATYPE_MISMATCH, parameters[0].Position);
+                                    list.value.RemoveAt((int) point.get_value());
+                                    return new FlowController(FlowController.TYPE.DONE);
+                            }
+                            break;
+                    }
+                    throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, binary.Position);
+                } else {
+                    return await RunFunction(function, parameters, main_context, function.context.CreateChild(), binary.Position);
+                }
             }
             default:
                 return null;
@@ -507,6 +533,7 @@ public class Interpreter {
                     case MarbleString:
                         return operand.duplicate();
                     case MarbleList data:
+                        if (data.value.Count == 0) return new MarbleString("[]");
                         string output = "[";
                         foreach (MarbleData element in data.value) {
                             output += (await ConvertOperation(MarbleData.TYPE.STRING, element, position)).get_value() + ", ";
@@ -1617,6 +1644,7 @@ public class Interpreter {
             StorageClass storage_class = (await InterpreteNode(node.Datatype, main_context)).IsStorageClass(node.Datatype.Position);
             storage_function.Class_name = storage_class.Class_name;
         }
+        storage_function.context = main_context;
         main_context.CreateFunction(node.Identifier.Data as string, storage_function);
         return new FlowController(FlowController.TYPE.DONE);
     }

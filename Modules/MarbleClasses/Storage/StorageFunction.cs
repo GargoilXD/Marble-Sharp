@@ -4,16 +4,25 @@ public class StorageFunction : StorageEntity {
     public List<Node> Arguments {private set; get;}
     public OperandInstructionNode Instructions {private set; get;}
     public TokenPosition Position;
+    public ContextualStorage context;
     public StorageFunction(ACCESSMODE access_mode, DATATYPE datatype, bool is_static, bool unlimited_arguments, List<Node> arguments, OperandInstructionNode instructions) : base(access_mode, datatype, is_static) {
         UnlimitedArguments = unlimited_arguments;
         Arguments = arguments;
         Instructions = instructions;
     }
     public override StorageFunction Duplicate() {
-        return new StorageFunction(AccessMode, Datatype, IsStatic, UnlimitedArguments, Arguments, Instructions){ Class_name = Class_name };
+        return new StorageFunction(AccessMode, Datatype, IsStatic, UnlimitedArguments, Arguments, Instructions){ Class_name = Class_name, context = context };
     }
     public override string ToString() {
         return $"Access mode: {AccessMode}, Static: {IsStatic}, Return type: {Datatype}, Arguments: {Arguments}";
+    }
+    public class Inbuilt : StorageFunction {
+        public MarbleData marbleData;
+        public string Function;
+        public Inbuilt(MarbleData data, string function) : base(ACCESSMODE.NONE, DATATYPE.USER_DEFINED, false, false, null, null) {
+            marbleData = data;
+            Function = function;
+        }
     }
     public class Constructor : StorageFunction {
         public List<Node> BaseParameters;
