@@ -185,7 +185,7 @@ public class Interpreter {
                 MarbleData data = Left.ToMarbleData(node.Position);
                 switch (node.Right) {
                     case BinaryOperatorNode function: {
-                        /*ACCESSORS?*/
+                         /*ACCESSORS?*/
                         DataNode identifier = function.Left as DataNode;
                         List<Node> parameters = (function.Right as DataNode).Data as List<Node>;
                         switch (data) {
