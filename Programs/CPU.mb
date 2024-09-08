@@ -1,0 +1,80 @@
+class CPU {
+	public static constant variable integer MOVE_A_C = 0
+	public static constant variable integer MOVE_B_C = 1
+	public static constant variable integer ADD = 2
+	public static constant variable integer SUB = 3
+	public static constant variable integer AND = 4
+	public static constant variable integer OR = 5
+	public static constant variable integer LOAD_A = 6
+	public static constant variable integer LOAD_B = 7
+	public static constant variable integer OUTPUT = 8
+
+	public variable integer ProgramCounter = 0
+	public variable list Register
+	public variable integer A = 0
+	public variable integer B = 0
+	public variable integer C = 0
+	public variable boolean SwitchControl = false
+	public variable boolean load_a = false
+	public variable boolean load_b = false
+
+	public function void set_register(list register) {
+		Register = register
+	}
+	public function void Run() {
+		while (ProgramCounter < Register.size) {
+			if (SwitchControl) {
+				if (load_a) {
+					A = Register[ProgramCounter]
+					load_a = false
+				}
+				if (load_b) {
+					B = Register[ProgramCounter]
+					load_b = false
+				}
+				SwitchControl = false
+			} else {
+				if (Register[ProgramCounter] == MOVE_A_C) {
+					A = C
+				} elseif (Register[ProgramCounter] == MOVE_B_C) {
+					B = C
+				} elseif (Register[ProgramCounter] == ADD) {
+					C = A + B
+				} elseif (Register[ProgramCounter] == SUB) {
+					C = A - B
+				} elseif (Register[ProgramCounter] == OR) {
+					C = A and B
+				} elseif (Register[ProgramCounter] == OR) {
+					C = A or B
+				} elseif (Register[ProgramCounter] == LOAD_A) {
+					SwitchControl = true
+					load_a = true
+				} elseif (Register[ProgramCounter] == LOAD_B) {
+					SwitchControl = true
+					load_b = true
+				} elseif (Register[ProgramCounter] == OUTPUT) {
+					PrintLine(C)
+					break
+				} else {
+					PrintLine('Invalid Instruction:', Register[ProgramCounter])
+				}
+			}
+			ProgramCounter += 1
+		}
+	}
+}
+
+variable CPU CPU_1 = CPU()
+CPU_1.set_register([
+	CPU.LOAD_A,
+	5,
+	CPU.LOAD_B,
+	1,
+	CPU.ADD,
+	CPU.MOVE_A_C,
+	CPU.LOAD_B,
+	3,
+	CPU.SUB,
+	CPU.OUTPUT
+])
+CPU_1.Run()

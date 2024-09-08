@@ -29,6 +29,13 @@ public class ContextualStorage {
 	public ContextualStorage CreateChild() {
 		return new ContextualStorage(this);
     }
+    public ContextualStorage CreateLoveChild(ContextualStorage lover) {
+        ContextualStorage child = new ContextualStorage(this);
+        foreach (KeyValuePair<string, StorageVariable> KV in lover.Variables) {
+            child.Variables.Add(KV.Key, KV.Value.Duplicate());
+        }
+		return child;
+    }
     public ContextualStorage Duplicate() {
         Dictionary<string, StorageVariable> variables = new Dictionary<string, StorageVariable>();
         Dictionary<string, StorageFunction> functions = new Dictionary<string, StorageFunction>();

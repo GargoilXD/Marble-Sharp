@@ -226,10 +226,13 @@ public class Interpreter {
                                 return null;
                             }
                             case MarbleObject marble_object: {
-                                if (!marble_object.value.Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
+                                //if (function.Operator.Type == OperatorToken.OPERATOR.EXPONENT) {
+                                if(!marble_object.value.Storage.HasFunction(identifier.Data as string)) throw new InterpreterError(InterpreterError.TYPE.UNDEFINED_FUNCTION, identifier.Position);
                                 StorageFunction storage_function = marble_object.value.Storage.GetFunction(identifier.Data as string);
-                                if (storage_function.AccessMode != StorageEntity.ACCESSMODE.PUBLIC) throw new InterpreterError(InterpreterError.TYPE.ACCESSING_PRIVATE_FUNCTION, function.Position);
                                 return await RunFunction(storage_function, parameters, main_context, marble_object.value.Storage.CreateChild(), function.Position);
+                                //} else {
+                                //    return await InterpreteNode(node.Right, main_context.CreateLoveChild(marble_object.value.Storage));
+                                //}
                             }
                             default:
                                 return null;
@@ -1331,7 +1334,8 @@ public class Interpreter {
     private async Task<FlowController> InterpreteFlowControlNode(FlowControlNode node, ContextualStorage main_context) {
         switch (node.Type) {
             case FlowController.TYPE.BREAKPOINT:
-                throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
+                return new FlowController(FlowController.TYPE.DONE);
+                //throw new InterpreterError(InterpreterError.TYPE.UNIMPLEMENTED_FEATURE, node.Position);
             case FlowController.TYPE.RETURN:
                 if (!main_context.HasVariable("RETURN!")) throw new InterpreterError(InterpreterError.TYPE.UNEXPECTED_TOKEN, node.Position);
                 StorageVariable storage_variable = main_context.GetVariable("RETURN!");
