@@ -2,7 +2,7 @@
 
 A verbose and simple programming language hobby project, implemented in C# with an in-Godot IDE.
 
-> Status: early prototype. The language, standard library, and IDE are all subject to change. Sister implementation: [Marble-Godot](https://github.com/GargoilXD/Marble-Godot) (GDScript backend, capitalized syntax).
+> Status: early prototype. The language, standard library, and IDE are all subject to change. Sister implementation: [Marble-Godot](https://github.com/GargoilXD/Marble-Godot) (GDScript backend, capitalized syntax), the original implementation of Marble.
 
 ## What is Marble?
 
